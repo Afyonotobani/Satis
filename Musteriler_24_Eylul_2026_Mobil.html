@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Müşteriler — Satıcılı Takip</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx-js-style/1.2.0/xlsx.bundle.js" onerror="var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js';document.head.appendChild(s);"></script>
+<style>
+  :root{
+    --dark:#262626; --amber:#B45309; --cream:#FDF6EC; --green:#92D050;
+    --red:#FF0000; --redname:#C00000; --purple:#7030A0; --line:#e5e0d8; --gray:#808080;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%; overscroll-behavior-x:none;}
+  body{margin:0; background:#fff; color:#1a1a1a; height:100dvh; display:flex; flex-direction:column; overflow:hidden;
+    font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; font-size:14px;
+    -webkit-text-size-adjust:100%;}
+  button, td, .tab{touch-action:manipulation;}
+  button{-webkit-user-select:none; user-select:none;}
+  header{flex:none; z-index:20; background:#fff; border-bottom:2px solid var(--dark);
+    padding:10px calc(14px + env(safe-area-inset-right)) 10px calc(14px + env(safe-area-inset-left));
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  #scroller{flex:1; overflow:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
+    padding-left:env(safe-area-inset-left); padding-right:env(safe-area-inset-right);
+    padding-bottom:env(safe-area-inset-bottom);}
+  header h1{font-size:16px; margin:0; font-weight:800; letter-spacing:.2px;}
+  header h1 span{color:var(--amber);}
+  .tabs{display:flex; gap:6px; margin-left:auto;}
+  .tab{border:1.5px solid var(--dark); background:#fff; color:var(--dark); font-weight:700;
+    padding:7px 16px; border-radius:8px; cursor:pointer; font-size:13px;}
+  .tab.active{background:var(--dark); color:#fff;}
+  .btn{border:none; border-radius:8px; padding:8px 14px; font-weight:700; cursor:pointer; font-size:13px;}
+  .btn-dl{background:var(--amber); color:#fff;}
+  .btn-add{background:#fff; color:var(--amber); border:1.5px dashed var(--amber);}
+  .wrap{padding:12px; overflow-x:auto;}
+  table{border-collapse:collapse; width:100%; min-width:1060px; background:#fff;}
+  
+  th,td{border:1px solid var(--line); padding:7px 9px; vertical-align:top; text-align:left;}
+  thead th{background:var(--dark); color:#fff; font-weight:700; position:sticky; top:0; z-index:10; border-color:#3a3a3a;}
+  tr.group td{background:var(--amber); color:#fff; font-weight:700; border-color:#9c4a08;}
+  tr.group td .gname{outline:none; display:inline;}
+  tr.zebra td{background:var(--cream);}
+  tr.green td{background:var(--green) !important;}
+  td.datecell.gecmis{background:#fff !important; color:var(--red); font-weight:700;}
+  td.name.redname{color:var(--redname); font-weight:700;}
+  td.name.morname{color:var(--purple); font-weight:700;}
+  tr.green td.name.morname{color:var(--purple);}
+  td.name{cursor:pointer;}
+  .sureinfo{display:block; font-size:10.5px; margin-top:3px; font-weight:800; white-space:nowrap;}
+  .sureinfo.ok{color:#1e7e34;}
+  .sureinfo.bad{color:var(--red);}
+  .sureinfo.mid{color:#946200;}
+  .menu .srow{display:flex; align-items:stretch;}
+  .menu .srow button:first-child{flex:1;}
+  .menu .srow button.sx{width:44px; color:#c00000; font-weight:800; justify-content:center; border-left:1px solid var(--line);}
+  .menu .mtitle{padding:9px 14px 5px; font-weight:800; font-size:11px; color:#999; letter-spacing:.4px; text-transform:uppercase;}
+  td.calc{font-size:11.5px; color:#555; white-space:nowrap; background:#faf8f4; line-height:1.5;}
+  td.calc b{color:var(--amber); font-weight:800;}
+  tr.green td.name.redname{color:var(--redname);}
+  td[contenteditable]{outline:none; min-width:40px;}
+  td[contenteditable]:focus{box-shadow:inset 0 0 0 2px var(--amber); background:#fff !important; color:#1a1a1a;}
+  col.c-mus{width:190px;} col.c-mah{width:200px;} col.c-tar{width:130px;} col.c-tes{width:130px;}
+  .rowbtn,.gbtn{border:none; background:transparent; cursor:pointer; font-size:14px; padding:2px 4px; opacity:.85;}
+  td.act{width:34px; text-align:center; border-left:1px solid var(--line); background:#fff !important; padding:4px 2px;}
+  tr.group td.act{background:var(--amber) !important;}
+  .gbtns{float:right; display:flex; gap:2px;}
+  .gbtn{color:#fff;}
+  .menu{position:fixed; z-index:50; background:#fff; border:1.5px solid var(--dark); border-radius:10px;
+    box-shadow:0 8px 24px rgba(0,0,0,.18); min-width:230px; overflow:hidden;}
+  .menu button{display:flex; align-items:center; gap:8px; width:100%; border:none; background:#fff;
+    padding:11px 14px; font-size:13.5px; cursor:pointer; text-align:left;}
+  .menu button:active{background:var(--cream);}
+  .menu button.on::after{content:"✓"; margin-left:auto; color:var(--amber); font-weight:800;}
+  .menu hr{border:none; border-top:1px solid var(--line); margin:0;}
+  td.datecell{cursor:pointer;}
+  td.datecell:active{box-shadow:inset 0 0 0 2px var(--amber);}
+  .dp{padding:10px; min-width:0;}
+  .dp .dph{display:flex; align-items:center; gap:6px; margin-bottom:8px;}
+  .dp .dph b{flex:1; text-align:center; font-size:14px;}
+  .dp .dpnav{border:1.5px solid var(--dark); background:#fff; border-radius:7px; width:30px; height:28px; font-weight:800; cursor:pointer;}
+  .dp .grid{display:grid; grid-template-columns:34px repeat(7,34px); gap:2px;}
+  .dp .grid .hd{font-size:10px; font-weight:800; color:#999; text-align:center; padding:3px 0;}
+  .dp .grid button{border:1px solid var(--line); background:#fff; border-radius:6px; height:30px; font-size:12.5px; cursor:pointer; padding:0;}
+  .dp .grid button.out{color:#c8c2b6;}
+  .dp .grid button.tdy{border-color:var(--amber); color:var(--amber); font-weight:800;}
+  .dp .grid button.wk{background:var(--cream); border-color:#e6d9c2; color:var(--amber); font-weight:800; font-size:10.5px;}
+  .dp .grid button:active{background:var(--amber); color:#fff;}
+  .dp .dpf{display:flex; gap:6px; margin-top:8px;}
+  .dp .dpf button{flex:1; border:1.5px solid var(--line); background:#fff; border-radius:7px; padding:7px 0; font-size:12px; font-weight:700; cursor:pointer;}
+  .foot{color:var(--gray); font-size:12.5px; padding:10px 14px 4px;}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; padding:0 14px 18px; font-size:12px; color:#555;}
+  .legend span{display:inline-flex; align-items:center; gap:5px;}
+  .sw{width:13px; height:13px; border-radius:3px; display:inline-block; border:1px solid rgba(0,0,0,.15);}
+  .reset{color:#bbb; font-size:11px; text-decoration:underline; cursor:pointer; margin-left:auto;}
+  .toast{position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:var(--dark); color:#fff;
+    padding:10px 18px; border-radius:10px; font-size:13px; font-weight:600; z-index:60; opacity:0; transition:opacity .25s; pointer-events:none;}
+  .toast.show{opacity:1;}
+  .calbar{display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap;}
+  .calbar h2{margin:0; font-size:17px; font-weight:800; min-width:150px;}
+  .navbtn{border:1.5px solid var(--dark); background:#fff; border-radius:8px; width:34px; height:32px;
+    font-size:15px; font-weight:800; cursor:pointer;}
+  .navbtn.today{width:auto; padding:0 12px; font-size:12.5px;}
+  .cal{display:grid; grid-template-columns:repeat(7,1fr); border:1.5px solid var(--dark); border-radius:10px; overflow:hidden; min-width:760px; touch-action:pan-y; user-select:none; -webkit-user-select:none;}
+  .cal .dow{background:var(--dark); color:#fff; font-weight:700; font-size:12px; padding:7px 8px; text-align:center;}
+  .cal .day{border:1px solid var(--line); min-height:92px; padding:5px 5px 6px; background:#fff;}
+  .cal .day.out{background:#faf8f4;}
+  .cal .day .dnum{font-size:12px; font-weight:700; color:#666; margin-bottom:4px;}
+  .cal .day.out .dnum{color:#c8c2b6;}
+  .cal .day.today{background:var(--cream); box-shadow:inset 0 0 0 2px var(--amber);}
+  .cal .day.today .dnum{color:var(--amber);}
+  .chip{display:block; font-size:11px; line-height:1.25; border-radius:5px; padding:3px 5px; margin-bottom:3px;
+    font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:default;}
+  .chip.u{background:var(--amber); color:#fff;}
+  .chip.t{background:var(--dark); color:#fff;}
+  .wkband{grid-column:1 / -1; background:#fff8ee; border:1px solid var(--line); border-top:2px solid var(--amber);
+    padding:4px 8px; font-size:11.5px; display:flex; gap:6px; flex-wrap:wrap; align-items:center;}
+  .wkband .wtag{font-weight:800; color:var(--amber); font-size:10.5px; text-transform:uppercase; letter-spacing:.3px;}
+  .chip.w{background:#fff; border:1.5px dashed var(--amber); color:#7a3c06; display:inline-block; margin:0;}
+  .callegend{display:flex; gap:14px; font-size:12px; color:#555; margin-top:10px; flex-wrap:wrap;}
+  @media (pointer:coarse){
+    /* yazılar küçük; iOS odak zoomu viewport'taki maximum-scale=1 ile zaten kapalı */
+    th,td{font-size:11.5px; padding:5px 6px;}
+    td.calc{font-size:10px; line-height:1.45;}
+    tr.group td{font-size:12px;}
+    .btn,.tab{padding:8px 12px; font-size:12.5px; min-height:40px;}
+    .rowbtn{font-size:17px; padding:8px 10px;}
+    td.act{width:40px;}
+    .gbtn{font-size:14px; padding:5px 8px;}
+    .menu button{padding:13px 14px; font-size:14px;}
+    .dp .grid{grid-template-columns:40px repeat(7,40px); gap:2px;}
+    .dp .grid button{height:38px; font-size:13px;}
+    .dp .grid button.wk{font-size:10.5px;}
+    .dp .dpnav{width:40px; height:36px; font-size:16px;}
+    .dp .dpf button{padding:10px 0; font-size:12px;}
+    .navbtn{width:42px; height:38px; font-size:16px;}
+    .navbtn.today{padding:0 14px; font-size:12px;}
+    .calbar h2{font-size:14px; min-width:0;}
+    .cal .day{min-height:70px;}
+    .cal .day .dnum{font-size:10px;}
+    .cal .dow{font-size:10px; padding:5px 4px;}
+    .chip{font-size:9.5px; padding:3px 4px;}
+    .wkband{font-size:9.5px; padding:3px 6px;}
+    .foot{font-size:10.5px;} .legend{font-size:10px;}
+    header h1{font-size:12.5px;}
+    table{min-width:820px;}
+  }
+  @media (orientation:portrait) and (pointer:coarse){
+    #rotateHint{display:flex;}
+  }
+  #rotateHint{display:none; flex:none; align-items:center; justify-content:center; gap:8px;
+    background:var(--amber); color:#fff; font-size:13px; font-weight:700; padding:8px 12px;}
+
+/* Refined customer workspace */
+:root{--dark:#253d38;--amber:#986f3c;--cream:#faf8f4;--green:#edf6ef;--red:#bc4545;--redname:#b13e48;--purple:#805ba5;--line:#e6e9e6;--gray:#7a8580}
+body{background:#f4f6f4;color:#263b35;font-size:13px;font-family:Inter,-apple-system,"Segoe UI",sans-serif}
+header{padding:19px 30px;background:#fff;border-bottom:1px solid var(--line);gap:12px}
+header h1{font-size:19px;letter-spacing:-.6px;display:flex;align-items:center;gap:12px}header h1:before{content:'A';display:grid;place-items:center;width:38px;height:38px;border-radius:11px;background:var(--dark);color:#e8d7b8;font:26px Georgia,serif}header h1 span{font-size:11px;color:#85918b;font-weight:500;letter-spacing:0}
+.tabs{background:#f2f5f2;padding:4px;border-radius:10px;gap:3px}.tab{border:0;background:transparent;color:#6f7c75;border-radius:7px;padding:9px 16px;font-weight:600}.tab.active{background:white;color:var(--dark);box-shadow:0 2px 6px #203a3410}
+.btn{min-height:38px;border-radius:8px;font-weight:600}.btn-add{border:1px solid #dce3dd;color:var(--dark);background:white}.btn-dl{background:var(--dark)}button{transition:background .15s,box-shadow .15s}button:hover{filter:brightness(.96)}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #b9cfc1;outline-offset:2px}#btnGear{border:1px solid var(--line)!important}
+#scroller{padding:26px 30px 16px}.overview-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.eyebrow{text-transform:uppercase;letter-spacing:2px;font-size:10px;color:#829187;font-weight:700}.overview-heading h2{font-size:28px;letter-spacing:-1px;margin:7px 0}.overview-heading p{margin:0;color:#829087;font-size:12px}.date-label{font-size:12px;color:#79867e;background:#fff;border:1px solid var(--line);padding:10px 14px;border-radius:8px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}.stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:17px 20px;position:relative}.stat small{font-size:12px;color:#77867c}.stat strong{display:block;font-size:29px;letter-spacing:-1px;font-weight:600;margin:9px 0 4px}.stat span{font-size:11px;color:#8b978f}.stat:first-child{background:var(--dark);color:#fff;border-color:var(--dark)}.stat:first-child small,.stat:first-child span{color:#bed0c5}.stat:nth-child(3) strong{color:var(--red)}
+.toolbar{display:flex;align-items:center;gap:12px;margin-bottom:14px}.toolbar label{position:relative;flex:1;max-width:370px}.toolbar input,.toolbar select{height:40px;border:1px solid #dfe5df;border-radius:8px;background:#fff;color:var(--dark);padding:0 13px;font:inherit}.toolbar input{width:100%}.toolbar select{max-width:230px}.table-hint{margin-left:auto;color:#8b958f;font-size:11px}
+#app{border:1px solid var(--line);border-radius:12px;overflow:auto;background:white;padding:0;box-shadow:0 3px 12px #263b3503}table{min-width:1160px}th,td{border:0;border-bottom:1px solid #ecf0eb;padding:14px 13px;line-height:1.55;vertical-align:middle}thead th{background:#fafbf9;color:#748278;font-size:10px;letter-spacing:.45px;text-transform:uppercase;border-bottom:1px solid var(--line);padding:14px 13px}tr.group td{background:#eef2ed;color:var(--dark);border-bottom:1px solid #e0e7df;font-size:12px;padding:10px 13px}.gname{font-weight:700}.gbtn{color:#60796a;border-radius:5px}.gbtns{gap:8px}tr.group td.act{background:#eef2ed!important}tr.zebra td{background:#fcfdfb}tbody tr:not(.group):hover td{background:#f5f8f4}td.name{font-weight:650;font-size:12px}td.calc{background:transparent;color:#829084;font-size:10px}td.calc b{color:#5b7767}td.datecell{font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}td.datecell.gecmis{background:transparent!important;color:var(--red)}tr.green td{background:#f0f7f1!important}td.act{background:transparent!important;vertical-align:middle}.rowbtn{font-size:21px;color:#819086;border-radius:6px}td[contenteditable]:empty:before{content:'—';color:#c0c9c0}.foot{padding:17px 0 10px;font-size:11px}.legend{padding:0 0 16px;font-size:10px;gap:12px;color:#8a958c}.sw{width:8px;height:8px;border:0;border-radius:50%}.reset{font-size:10px}.menu{border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 60px #172b3826;overflow:hidden}.menu button{color:var(--dark)}.menu button:hover{background:#f3f6f1}.toast{box-shadow:0 6px 25px #213a3422}.calbar{padding:18px;margin:0}.cal{border:0;border-radius:0}.cal .dow{background:#eef2ed;color:#627b6b;padding:12px}.cal .day{min-height:115px;padding:9px}.callegend{padding:0 18px 16px}.chip{padding:6px 7px;border-radius:5px}.empty-state{padding:40px;text-align:center;color:#829087}
+@media(max-width:900px){header{padding:12px 16px}header h1 span{display:none}.tabs{margin-left:auto}#scroller{padding:20px 16px}.stat{padding:14px}.table-hint{display:none}.overview-heading h2{font-size:24px}}
+@media(max-width:600px){header{gap:8px}header h1{font-size:16px}.tabs{order:3;width:100%;justify-content:stretch}.tab{flex:1}.btn{padding:8px 10px;font-size:11px}header h1:before{width:29px;height:29px;font-size:21px}.stats{grid-template-columns:repeat(2,1fr);gap:9px;margin-bottom:17px}.stat strong{font-size:25px}.date-label{display:none}.toolbar{gap:8px}.toolbar label{min-width:0}.toolbar select{width:140px}.overview-heading p{font-size:11px}th,td{padding:11px;font-size:12px}.dp .grid{grid-template-columns:32px repeat(7,32px)}.dp .grid button{height:34px}#rotateHint{display:none}}
+
+
+/* Clearer hierarchy and smoother interactions */
+body{font-size:14px;color:#23392f}
+header h1{font-size:21px}header h1 span{color:#586e60;font-weight:650}
+.overview-heading p,.stat small,.stat span,.table-hint{color:#5f7265}
+.stat:first-child small,.stat:first-child span{color:#d5e5dc}
+.stat{box-shadow:0 3px 12px #213b3505}.stat strong{font-weight:750}
+.tab{font-size:14px;padding:10px 20px;color:#526659}.tab.active{color:#fff;background:#253d38;box-shadow:0 3px 8px #253d3825}
+.btn{font-size:13px;min-height:42px}.toolbar input,.toolbar select{height:44px;font-size:14px;border-color:#c5d0c6}.toolbar input::placeholder{color:#718174}
+#app{max-height:70dvh;scrollbar-width:thin;scrollbar-color:#a7b9ad #eff3ee;scroll-behavior:smooth;overscroll-behavior:contain;isolation:isolate}
+#app table{min-width:1240px;border-collapse:separate;border-spacing:0}
+thead th{background:#e5ece5;color:#344e3d;font-size:12px;font-weight:750;letter-spacing:0;top:0;box-shadow:0 1px 0 #c9d5c9;padding:15px 14px}
+th,td{padding:15px 14px;line-height:1.65;border-bottom:1px solid #dce5dc}
+td+td{border-left:1px solid #edf1eb}td.name{font-size:14px;font-weight:750}td.datecell{font-size:13px;font-weight:600}td.calc{font-size:12px;color:#526b59}td.calc b{color:#344f3e}.sureinfo{font-size:11px;white-space:normal;max-width:230px}td[contenteditable]:empty:before{color:#8c9e8e}
+tr.group td{padding:13px 15px;background:#dfe9df;color:#233e2d;border-top:8px solid #f4f6f4;border-bottom:1px solid #c4d3c4}
+tr.group td.act{background:#dfe9df!important;border-top:8px solid #f4f6f4}
+.group-heading{display:flex;align-items:center;gap:12px;min-height:38px}.seller-avatar{display:grid;place-items:center;flex:none;width:37px;height:37px;border-radius:10px;background:#c6d7c8;color:#304e39;font-size:13px;font-weight:800}.seller-text{display:flex;flex-direction:column;gap:1px}.seller-label{font-size:9px;text-transform:uppercase;letter-spacing:1.2px;font-weight:650;opacity:.78}.gname{font-size:16px;font-weight:800;line-height:1.4}.work-count{border-radius:20px;padding:4px 10px;background:#ffffffa6;color:#3d5845;font-size:11px;font-weight:750;white-space:nowrap}.gbtns{float:none;margin-left:auto;gap:8px}.gbtn{min-width:34px;height:34px;display:grid;place-items:center;background:#ffffff85;border:1px solid #b6cbb9;color:#304e39;font-size:17px}.gbtn:hover{background:#fff}
+#app.biten tr.group td,#app.biten tr.group td.act{background:#253d38!important;color:#fff;border-bottom:1px solid #253d38}
+#app.biten .seller-avatar{background:#4e675b;color:#f5e8ce}#app.biten .seller-label{color:#d4e4d8}#app.biten .gname{font-size:17px;color:#fff}#app.biten .work-count{background:#486254;color:#eff8f1}#app.biten .gbtn{background:#3d594c;border-color:#658372;color:#fff}#app.biten .gbtn:hover{background:#537360}
+tr.green td{background:#f9fcf8!important}tr.green:nth-child(even) td{background:#f0f6ee!important}tr.green td.name{border-left:4px solid #86aa8a}tbody tr:not(.group):hover td{background:#eaf2e8!important}tbody tr:not(.group):focus-within td{background:#edf4eb!important}td[contenteditable]:focus{background:#fff!important;box-shadow:inset 0 0 0 2px #75927a;border-radius:3px}.rowbtn{min-width:32px;min-height:34px;color:#45604c;background:#eaf0e7;opacity:1}.rowbtn:hover{background:#d6e3d2}
+.foot,.legend{color:#586d5c;font-size:12px}.legend{gap:13px}.reset{color:#806054;font-size:11px}.sw{width:10px;height:10px;flex-shrink:0}.legend .sw[style*="--green"]{background:#88b58a!important}.menu button{font-size:14px;min-height:43px}.menu{animation:menu-in .14s ease-out}.cal .day .dnum{font-size:13px;color:#405b47}.chip{font-size:12px}.toast{font-size:14px}
+button,td,input,select{transition:background-color .15s ease,border-color .15s ease,box-shadow .15s ease}button:active{transform:translateY(1px)}@keyframes menu-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:600px){header h1{font-size:17px}.tab{font-size:13px;padding:10px 12px}.btn{font-size:11px}.toolbar input,.toolbar select{font-size:13px}.toolbar select{width:145px}.gname,#app.biten .gname{font-size:16px}.table-hint{display:none}#app{max-height:72dvh}.stats{margin-bottom:15px}.stat small,.stat span{font-size:11px}.foot,.legend{font-size:11px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* Compact typography */
+body{font-size:12px}
+header h1{font-size:17px}
+.overview-heading h2{font-size:22px}
+.stat strong{font-size:23px}
+.stat{padding:13px 16px}
+.tab{font-size:12px;padding:8px 15px}
+.btn{font-size:12px;min-height:36px}
+.toolbar input,.toolbar select{font-size:12px;height:37px}
+th,td{font-size:12px;padding:9px 11px;line-height:1.5}
+thead th{font-size:11px;padding:10px 11px}
+td.name,td.datecell{font-size:12px}
+td.calc{font-size:11px}
+.sureinfo{font-size:10px}
+tr.group td{padding:8px 11px;border-top-width:6px}
+tr.group td.act{border-top-width:6px}
+.gname,#app.biten .gname{font-size:13px}
+.group-heading{min-height:31px;gap:9px}
+.seller-avatar{width:30px;height:30px;font-size:11px;border-radius:8px}
+.seller-label{font-size:8px}
+.work-count{font-size:10px;padding:3px 8px}
+.gbtn{min-width:30px;height:30px;font-size:15px}
+.rowbtn{font-size:17px;min-height:30px}
+.foot,.legend{font-size:11px}
+.menu button,.toast{font-size:12px}
+.brand-summary{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.header-summary{display:flex;align-items:center;gap:14px;color:#607467;font-size:11px}
+.header-summary span{white-space:nowrap}
+.header-summary b{margin-left:4px;color:#253d38;font-size:12px;font-variant-numeric:tabular-nums}
+header{padding:12px 20px;gap:10px}
+header h1{font-size:17px;gap:9px}
+header h1:before{width:30px;height:30px;font-size:22px}
+#scroller{padding:16px 20px}
+#app{max-height:calc(100dvh - 180px)}
+@media(max-width:600px){.brand-summary{gap:10px}.header-summary{gap:9px;font-size:10px}.header-summary b{font-size:11px}header{padding:10px 12px}#scroller{padding:12px}#app{max-height:72dvh}}
+.group-heading{cursor:pointer}
+.seller-toggle{display:inline-flex;align-items:center;gap:6px;border:0;padding:0;background:transparent;color:inherit;font-family:inherit;text-align:left;cursor:pointer}
+.fold-arrow{font-size:14px;width:12px;flex:none}
+.seller-toggle:hover{text-decoration:underline;text-underline-offset:3px}
+#app tr[hidden]{display:none!important}
+
+/* Mobile layout: keep the existing editable cells and actions. */
+@media(max-width:760px){
+ html,body{height:auto;min-height:100%;overflow:visible}body{min-height:100dvh}
+ header{padding:12px max(12px,env(safe-area-inset-right)) 10px max(12px,env(safe-area-inset-left));gap:8px}
+ .brand-summary{width:100%;gap:8px;justify-content:space-between}.header-summary{flex-wrap:wrap;gap:6px 12px;font-size:11px}.header-summary b{font-size:12px}
+ .tabs{order:0;width:100%;margin:4px 0;display:flex}.tab{flex:1;min-height:44px;font-size:14px;padding:10px}
+ .btn{min-height:44px;font-size:12px;padding:10px 12px}#btnGear{margin-left:auto}
+ #scroller{overflow:visible;flex:1;padding:12px max(12px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));min-width:0}
+ .toolbar{flex-wrap:wrap;gap:8px}.toolbar label{flex-basis:100%;max-width:none}.toolbar input,.toolbar select{width:100%;max-width:none;min-height:46px;font-size:16px}.toolbar select{flex:1}.table-hint{display:none}
+ #app{max-height:none;overflow:visible;border:0;background:transparent;box-shadow:none;border-radius:0}
+ #app table{display:block;min-width:0;width:100%}#app colgroup,#app thead{display:none}#app tbody{display:block}
+ #app tr[data-row]{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);position:relative;margin:0 0 12px;border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden}
+ #app tr[data-row] td{display:block;min-width:0;width:auto;padding:12px;border:0;border-bottom:1px solid #e6ece5;font-size:16px;line-height:1.5;white-space:normal;overflow-wrap:anywhere}
+ #app tr[data-row] td::before{content:attr(data-label);display:block;color:#607467;font-size:11px;font-weight:600;margin-bottom:5px;line-height:1.4}
+ #app tr[data-row] td.name{grid-column:1/-1;padding-right:64px;font-size:18px;min-height:72px}
+ #app tr[data-row] td[contenteditable]{min-height:76px}#app tr[data-row] td.calc{grid-column:1/-1;font-size:13px}
+ #app tr[data-row] td.act{position:absolute;right:8px;top:12px;border:0;padding:0;background:transparent!important}#app td.act::before{display:none!important}.rowbtn{width:44px;height:44px;font-size:24px}
+ #app tr.group{display:block;margin:18px 0 10px}#app tr.group:first-child{margin-top:0}#app tr.group>td{display:block;border:0;padding:12px;border-radius:12px}#app tr.group>td.act{display:none}
+ .group-heading{flex-wrap:wrap;gap:8px}.seller-text{flex:1;min-width:0}.seller-toggle{overflow-wrap:anywhere}.gname,#app.biten .gname{font-size:15px}.seller-label{font-size:10px}.seller-avatar{width:36px;height:36px}.work-count{font-size:11px}.gbtns{width:100%;justify-content:flex-end;border-top:1px solid #b6cbb955;padding-top:8px}.gbtn{width:44px;height:44px}
+ .sureinfo{font-size:12px;max-width:none}.foot,.legend{font-size:12px;line-height:1.6}.legend{gap:10px}.reset{padding:12px;font-size:12px}
+ .menu{left:8px!important;right:8px!important;top:auto!important;bottom:max(8px,env(safe-area-inset-bottom));width:auto;min-width:0!important;max-height:75dvh;overflow:auto;overscroll-behavior:contain}.menu button{min-height:46px;font-size:15px}.dp .grid{grid-template-columns:repeat(8,minmax(0,1fr));gap:3px}.dp .grid button{height:44px;min-height:44px;font-size:14px}.dp .grid button.wk{font-size:11px}.dp .dpnav{width:44px;height:44px}.dp .dph b{font-size:16px}
+ .toast{width:max-content;max-width:calc(100% - 24px);bottom:max(16px,env(safe-area-inset-bottom));font-size:14px;text-align:center}
+ .calbar{padding:12px 0;gap:8px}.calbar h2{flex:1;font-size:17px}.navbtn{min-width:44px;height:44px}.cal{display:flex;flex-direction:column;min-width:0;gap:8px;touch-action:pan-y}.cal .dow,.cal .day.out,.cal .day.mobile-empty{display:none}.cal .day{min-height:0;border-radius:10px;padding:12px}.cal .day .dnum{font-size:14px}.cal .day .dnum::after{content:' · ' attr(data-weekday);font-weight:400}.chip{font-size:14px;white-space:normal;overflow-wrap:anywhere;padding:9px}.wkband{border-radius:10px;padding:12px}.chip.w{white-space:normal}.callegend{padding:16px 0;font-size:12px}
+}
+
+</style>
+</head>
+<body>
+<header>
+  <div class="brand-summary"><h1>ArtDesign</h1><div class="header-summary" aria-label="İş özeti"><span>Aktif işler <b id="statActive">0</b></span><span>Biten işler <b id="statDone">0</b></span><span>Satış temsilcileri <b id="statReps">0</b></span></div></div>
+  <div class="tabs">
+    <button class="tab active" id="tabAktif" onclick="switchTab('aktif')">Aktif</button>
+    <button class="tab" id="tabBiten" onclick="switchTab('biten')">Biten</button>
+    <button class="tab" id="tabTakvim" onclick="switchTab('takvim')">Takvim</button>
+  </div>
+  <button class="btn btn-add" id="btnAddGroup" onclick="addGroup()">+ Temsilci</button>
+  <button class="btn btn-add" id="btnGecNot" onclick="toggleGecNot()" style="display:none">📝 Gecikme Notu</button>
+  <button class="btn btn-dl" onclick="exportExcel()">↓ Excel indir</button>
+  <button class="btn" id="btnGear" aria-label="Ayarlar ve yedekleme" onclick="openGear(event)" style="background:#fff; border:1.5px solid var(--dark); font-size:15px; padding:6px 11px;">⚙️</button>
+  <input type="file" id="fileImport" accept=".json,application/json" style="display:none" onchange="importJSON(this)">
+</header>
+
+<div id="rotateHint">📱 Rahat kullanım için telefonu yan çevirin</div>
+<div id="scroller">
+<div class="toolbar" id="uiToolbar"><label><input id="uiSearch" type="search" placeholder="Müşteri, mahal veya not ara…" aria-label="Müşteri ara" oninput="applyFilters()"></label><select id="uiRep" aria-label="Temsilci filtresi" onchange="applyFilters()"><option value="">Tüm temsilciler</option></select><span class="table-hint">Hücrelere tıklayarak düzenleyin</span></div>
+<div class="wrap" id="app"></div>
+<div class="foot" id="footnote"></div>
+<div class="legend">
+  <span><span class="sw" style="background:var(--redname)"></span> Kırmızı isim: teslim tarihi müşteriye bildirildi</span>
+  <span><span class="sw" style="background:var(--purple)"></span> Mor isim: teslim tarihi değiştirilebilir</span>
+  <span><span class="sw" style="background:#fff; border:1.5px solid var(--red)"></span> <span style="color:var(--red); font-weight:700">Kırmızı yazılı tarih</span>: üretim günü geçti (otomatik)</span>
+  <span><span class="sw" style="background:var(--green)"></span> Yeşil satır: tamamlandı</span>
+  <span>⏱ Müşteri adına dokunun → seçenek (yazı + gün aralığı) seçin; aralıkta veya sonrasında ise <b style="color:#1e7e34">✓ uygun</b>, eksikse <b style="color:var(--red)">⚠ yetişmiyor</b></span>
+  <span class="reset" onclick="resetData()">verileri sıfırla</span>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const LS_KEY = "musteriTakipSaticili_restore_20260924_v1";
+const FOOT = "Kırmızı isim işareti: teslim tarihi müşteriye bildirilmiştir.";
+function bitenCols(){
+  const c = ["Müşteri","Mahal","Tahmini Üretim","Üretime Atıldı","Net Teslim Tarihi"];
+  if(data.showGecikmeNot) c.push("Gecikme Notu");
+  return c.concat(["Satış Tarihi","Süreler"]);
+}
+const COLS = {
+  aktif: ["Müşteri","Mahal","Üretime Gideceği Tarih","Teslim Tarihi","Durum / Not","Satış Tarihi","Süreler"],
+  biten: ["Müşteri","Mahal","Tahmini Üretim","Üretime Atıldı","Net Teslim Tarihi","Satış Tarihi","Süreler"]
+};
+
+function R(m,mh,u,t,n,o={}){return {musteri:m,mahal:mh,uretim:u,teslim:t,not:n||"",satis:"",redName:!!o.rn,morName:!!o.mn,redUretim:!!o.ru,green:!!o.g};}
+
+const SEED = {"aktif": [{"temsilci": "Dilek Ay", "rows": [], "collapsed": false}, {"temsilci": "Erkan Çakır", "rows": [{"musteri": "Emrah Orbay", "mahal": "masa+sandalye", "redName": false, "morName": false, "redUretim": false, "green": false, "sure": null, "uretim": "", "teslim": "", "satis": "19.09.2026", "tahminiUretim": "", "not": "ürün detayları seçilecek", "importedDeliveryNote": "", "importedSureler": "", "importedDates": ["19.09.2026", "", "", ""]}], "collapsed": false}, {"temsilci": "Erkan Sözge", "rows": [{"musteri": "Ayşegül Kirişçi", "mahal": "2+1", "redName": false, "morName": true, "redUretim": true, "green": false, "sure": null, "uretim": "23.09.2026", "teslim": "18.11.2026", "satis": "14.07.2026", "tahminiUretim": "", "not": "üretime atılacak 23 eylül", "importedDeliveryNote": "problem var", "importedSureler": "S→Ü 71g\nS→T 127g\nÜ→T 56g", "importedDates": ["14.07.2026", "23.09.2026", "18.11.2026", ""]}, {"musteri": "Seçil Borçin", "mahal": "tv salon+2 oda", "redName": false, "morName": false, "redUretim": false, "green": false, "sure": null, "uretim": "", "teslim": "", "satis": "17.09.2026", "tahminiUretim": "", "not": "22 eylül para getirecek", "importedDeliveryNote": "", "importedSureler": "", "importedDates": ["17.09.2026", "", "", ""]}], "collapsed": false}, {"temsilci": "Halit Yılmaz", "rows": [{"musteri": "Harun Başaran", "mahal": "4 Banyo", "redName": false, "morName": false, "redUretim": false, "green": false, "sure": null, "uretim": "", "teslim": "", "satis": "", "tahminiUretim": "", "not": "İmalat çiziminde", "importedDeliveryNote": "", "importedSureler": "", "importedDates": ["", "", "", ""]}, {"musteri": "Durmuş Kayalı", "mahal": "7 oda", "redName": false, "morName": false, "redUretim": false, "green": false, "sure": null, "uretim": "", "teslim": "15.01.2027", "satis": "29.08.2026", "tahminiUretim": "", "not": "22 eylül 3D sunum", "importedDeliveryNote": "", "importedSureler": "S→T 139g", "importedDates": ["29.08.2026", "", "15.01.2027", ""]}], "collapsed": false}, {"temsilci": "Nükte Özkurt", "rows": [{"musteri": "Batuhan Topçu", "mahal": "", "redName": false, "morName": false, "redUretim": false, "green": false, "sure": null, "uretim": "", "teslim": "", "satis": "", "tahminiUretim": "", "not": "Mağazaya gelecek", "importedDeliveryNote": "", "importedSureler": "", "importedDates": ["", "", "", ""]}], "collapsed": false}, {"temsilci": "Özgür Çalım", "rows": [], "collapsed": false}, {"temsilci": "Serkan Başer", "rows": [{"musteri": "Ebru Karagözoğlu", "mahal": "2 kanepe", "redName": false, "morName": false, "redUretim": false, "green": false, "sure": null, "uretim": "", "teslim": "13.11.2026", "satis": "14.09.2026", "tahminiUretim": "", "not": "25.09 numune geleck", "importedDeliveryNote": "", "importedSureler": "S→T 60g", "importedDates": ["14.09.2026", "", "13.11.2026", ""]}], "collapsed": false}, {"temsilci": "Taner Bulak", "rows": [{"musteri": "Ser Bülent", "mahal": "Büyük proje", "redName": false, "morName": false, "redUretim": false, "green": false, "sure": null, "uretim": "", "teslim": "Ocak 2.haftası", "satis": "13.08.2026", "tahminiUretim": "", "not": "Çizimde", "importedDeliveryNote": "", "importedSureler": "S→T ~151g", "importedDates": ["13.08.2026", "", "Ocak 2.haftası", ""]}, {"musteri": "Taylan Özberk", "mahal": "6 oda", "redName": false, "morName": false, "redUretim": false, "green": false, "sure": null, "uretim": "", "teslim": "", "satis": "23.09.2026", "tahminiUretim": "", "not": "", "importedDeliveryNote": "", "importedSureler": "", "importedDates": ["23.09.2026", "", "", ""]}], "collapsed": false}, {"temsilci": "Zehra Doğan", "rows": [], "collapsed": false}, {"temsilci": "Selçuk Bayrak", "rows": [{"musteri": "Zeynep Koçhan", "mahal": "", "redName": false, "morName": false, "redUretim": false, "green": false, "sure": null, "uretim": "", "teslim": "", "satis": "", "tahminiUretim": "", "not": "", "importedDeliveryNote": "", "importedSureler": "", "importedDates": ["", "", "", ""]}, {"musteri": "Zeynep Kerenciler", "mahal": "", "redName": false, "morName": false, "redUretim": false, "green": false, "sure": null, "uretim": "", "teslim": "", "satis": "", "tahminiUretim": "", "not": "", "importedDeliveryNote": "", "importedSureler": "", "importedDates": ["", "", "", ""]}], "collapsed": false}], "biten": [{"temsilci": "Dilek Ay", "rows": [{"musteri": "Mehmet Kazpınar", "mahal": "Hareketli salon", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "", "teslim": "10.08.2026", "satis": "", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü —\nS→T —\nÜ→T —", "importedDates": ["", "", "10.08.2026", ""]}, {"musteri": "Mehmet Kozpınar yeni satış", "mahal": "masa+sandalye", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "14.07.2026", "uretim": "13.07.2026", "teslim": "27.08.2026", "satis": "08.07.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 5g\nS→T 50g\nÜ→T 45g", "importedDates": ["08.07.2026", "13.07.2026", "27.08.2026", "14.07.2026"]}, {"musteri": "Gönül Koçtürk", "mahal": "1 kanepe 1 berjer", "redName": false, "morName": true, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "15.07.2026", "uretim": "15.07.2026", "teslim": "Eylül 1.haftası", "satis": "11.07.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 4g\nS→T ~55g\nÜ→T ~51g", "importedDates": ["11.07.2026", "15.07.2026", "Eylül 1.haftası", "15.07.2026"]}, {"musteri": "Can Düz", "mahal": "2 kanepe", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "Eylül 3.haftası", "uretim": "19.07.2026", "teslim": "17.09.2026", "satis": "16.07.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 3g\nS→T 63g\nÜ→T 60g", "importedDates": ["16.07.2026", "19.07.2026", "17.09.2026", "Eylül 3.haftası"]}, {"musteri": "Ferit Ersoy", "mahal": "2 kanepe", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "31.07.2026", "teslim": "18.09.2026", "satis": "27.07.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 4g\nS→T 53g\nÜ→T 49g", "importedDates": ["27.07.2026", "31.07.2026", "18.09.2026", ""]}, {"musteri": "Rabia Aydoğan", "mahal": "", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "05.08.2026", "teslim": "25.09.2026", "satis": "31.08.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü -26g\nS→T 25g\nÜ→T 51g", "importedDates": ["31.08.2026", "05.08.2026", "25.09.2026", ""]}, {"musteri": "İKECHUKVU NOBLE UBOCHİL", "mahal": "Hareketli salon", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "08.08.2026", "uretim": "08.08.2026", "teslim": "Ekim 1.haftası", "satis": "06.08.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 2g\nS→T ~59g\nÜ→T ~57g", "importedDates": ["06.08.2026", "08.08.2026", "Ekim 1.haftası", "08.08.2026"]}, {"musteri": "Eda Bahadır", "mahal": "Hareketli salon", "redName": true, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "18.08.2026", "teslim": "Ekim 3.haftası", "satis": "18.07.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 31g\nS→T ~92g\nÜ→T ~61g", "importedDates": ["18.07.2026", "18.08.2026", "Ekim 3.haftası", ""]}], "collapsed": false}, {"temsilci": "Erkan Çakır", "rows": [{"musteri": "Necmettin Zengin", "mahal": "Hareketli salon", "redName": true, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "26.06.2026", "teslim": "15.08.2026", "satis": "", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü —\nS→T —\nÜ→T 50g", "importedDates": ["", "26.06.2026", "15.08.2026", ""]}, {"musteri": "Selma Acar", "mahal": "Tv'li salon", "redName": true, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "29.06.2026", "teslim": "15.08.2026", "satis": "", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü —\nS→T —\nÜ→T 47g", "importedDates": ["", "29.06.2026", "15.08.2026", ""]}, {"musteri": "Kubilay Çetin", "mahal": "1 kanepe 1 berjer", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "01.07.2026", "teslim": "14.08.2026", "satis": "", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü —\nS→T —\nÜ→T 44g", "importedDates": ["", "01.07.2026", "14.08.2026", ""]}, {"musteri": "Şenol Uygur", "mahal": "1 kanepe 1 berjer", "redName": true, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "15.07.2026", "uretim": "14.07.2026", "teslim": "10.09.2026", "satis": "11.07.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 3g\nS→T 61g\nÜ→T 58g", "importedDates": ["11.07.2026", "14.07.2026", "10.09.2026", "15.07.2026"]}, {"musteri": "Esat Kaba", "mahal": "kahve köşesi", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "20.07.2026", "uretim": "19.07.2026", "teslim": "", "satis": "", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü —\nS→T —\nÜ→T —", "importedDates": ["", "19.07.2026", "", "20.07.2026"]}, {"musteri": "Pal Ajans", "mahal": "", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "05.08.2026", "teslim": "21.09.2026", "satis": "31.07.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 5g\nS→T 52g\nÜ→T 47g", "importedDates": ["31.07.2026", "05.08.2026", "21.09.2026", ""]}, {"musteri": "Güray Yüksel", "mahal": "1 orta 1 yan sehpa", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "14.08.2026", "teslim": "10.09.2026", "satis": "12.08.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 2g\nS→T 29g\nÜ→T 27g", "importedDates": ["12.08.2026", "14.08.2026", "10.09.2026", ""]}, {"musteri": "Tuğba Kökkoparan", "mahal": "TV'li salon", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "20.08.2026", "teslim": "", "satis": "11.08.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 9g\nS→T —\nÜ→T —", "importedDates": ["11.08.2026", "20.08.2026", "", ""]}, {"musteri": "Nesrin Yavuzer Yılmaz", "mahal": "2 kanepe", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "23.08.2026", "uretim": "23.08.2026", "teslim": "02.10.2026", "satis": "15.08.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 8g\nS→T 48g\nÜ→T 40g", "importedDates": ["15.08.2026", "23.08.2026", "02.10.2026", "23.08.2026"]}, {"musteri": "Sadullah keleşoğlu", "mahal": "Hareketli salon", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "23.08.2026", "uretim": "23.08.2026", "teslim": "15.10.2026", "satis": "13.08.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 10g\nS→T 63g\nÜ→T 53g", "importedDates": ["13.08.2026", "23.08.2026", "15.10.2026", "23.08.2026"]}, {"musteri": "Beytullah Çakan", "mahal": "3 oda", "redName": true, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "02.09.2026", "uretim": "06.09.2026", "teslim": "04.11.2026", "satis": "05.08.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 32g\nS→T 91g\nÜ→T 59g\nGecikme 4g", "importedDates": ["05.08.2026", "06.09.2026", "04.11.2026", "02.09.2026"]}], "collapsed": false}, {"temsilci": "Erkan Sözge", "rows": [{"musteri": "Enis Orkun Ekin", "mahal": "Tv'li ve dolaplı salon", "redName": true, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "29.06.2026", "teslim": "25.08.2026", "satis": "", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü —\nS→T —\nÜ→T 57g", "importedDates": ["", "29.06.2026", "25.08.2026", ""]}, {"musteri": "Erkan Aydoğan", "mahal": "Tv'li salon", "redName": true, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "29.06.2026", "teslim": "25.08.2026", "satis": "", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü —\nS→T —\nÜ→T 57g", "importedDates": ["", "29.06.2026", "25.08.2026", ""]}, {"musteri": "Utku Taha Artun", "mahal": "Hareketli salon", "redName": true, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "25.06.2026", "teslim": "25.08.2026", "satis": "", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü —\nS→T —\nÜ→T 61g", "importedDates": ["", "25.06.2026", "25.08.2026", ""]}, {"musteri": "Emil Özkardeşler", "mahal": "tv+bar'lı salon", "redName": true, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "27.07.2026", "uretim": "29.07.2026", "teslim": "Eylül 3.haftası", "satis": "27.07.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 2g\nS→T ~53g\nÜ→T ~51g\nGecikme 2g", "importedDates": ["27.07.2026", "29.07.2026", "Eylül 3.haftası", "27.07.2026"]}, {"musteri": "Serdar Bakkaloğlu ilave", "mahal": "1 dolap", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "27.07.2026", "uretim": "27.07.2026", "teslim": "", "satis": "30.07.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü -3g\nS→T —\nÜ→T —", "importedDates": ["30.07.2026", "27.07.2026", "", "27.07.2026"]}, {"musteri": "Yusuf Gümüş", "mahal": "1+1", "redName": true, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "30.07.2026", "uretim": "30.07.2026", "teslim": "Eylül 4.haftası", "satis": "14.06.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 46g\nS→T ~103g\nÜ→T ~57g", "importedDates": ["14.06.2026", "30.07.2026", "Eylül 4.haftası", "30.07.2026"]}, {"musteri": "Elven Sevencan", "mahal": "1+1", "redName": false, "morName": true, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "30.07.2026", "uretim": "31.07.2026", "teslim": "15.10.2026", "satis": "30.04.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 92g\nS→T 168g\nÜ→T 76g\nGecikme 1g", "importedDates": ["30.04.2026", "31.07.2026", "15.10.2026", "30.07.2026"]}, {"musteri": "Atilla Budak", "mahal": "2 berjer 2 kanepe", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "19.08.2026", "uretim": "18.08.2026", "teslim": "01.10.2026", "satis": "16.08.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 2g\nS→T 46g\nÜ→T 44g", "importedDates": ["16.08.2026", "18.08.2026", "01.10.2026", "19.08.2026"]}, {"musteri": "Can basmacıoğlu", "mahal": "2 Berjer", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "19.08.2026", "uretim": "18.08.2026", "teslim": "25.09.2026", "satis": "15.08.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 3g\nS→T 41g\nÜ→T 38g", "importedDates": ["15.08.2026", "18.08.2026", "25.09.2026", "19.08.2026"]}, {"musteri": "Sema Kartal", "mahal": "1 köşe koltuk", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "23.08.2026", "uretim": "23.08.2026", "teslim": "01.10.2026", "satis": "20.08.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 3g\nS→T 42g\nÜ→T 39g", "importedDates": ["20.08.2026", "23.08.2026", "01.10.2026", "23.08.2026"]}, {"musteri": "Ahmet Şungun", "mahal": "7+1", "redName": true, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "26.08.2026", "uretim": "26.08.2026", "teslim": "10.11.2026", "satis": "15.06.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 72g\nS→T 148g\nÜ→T 76g", "importedDates": ["15.06.2026", "26.08.2026", "10.11.2026", "26.08.2026"]}, {"musteri": "Veysi Demir", "mahal": "Hareketli salon", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "09.09.2026", "teslim": "06.10.2026", "satis": "27.08.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 13g\nS→T 40g\nÜ→T 27g", "importedDates": ["27.08.2026", "09.09.2026", "06.10.2026", ""]}, {"musteri": "Bilge Bayraktar", "mahal": "Hareketli salon", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "04.09.2026", "uretim": "03.09.2026", "teslim": "", "satis": "25.08.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 9g\nS→T —\nÜ→T —", "importedDates": ["25.08.2026", "03.09.2026", "", "04.09.2026"]}, {"musteri": "Abdullah Erdoğan", "mahal": "Hareketli salon", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "18.09.2026", "teslim": "18.11.2026", "satis": "03.09.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 15g\nS→T 76g\nÜ→T 61g", "importedDates": ["03.09.2026", "18.09.2026", "18.11.2026", ""]}, {"musteri": "Özge Demir", "mahal": "", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "22.09.2026", "teslim": "22.12.2026", "satis": "22.09.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 0g\nS→T 91g\nÜ→T 91g", "importedDates": ["22.09.2026", "22.09.2026", "22.12.2026", ""]}], "collapsed": false}, {"temsilci": "Halit Yılmaz", "rows": [{"musteri": "Alişan Çelen", "mahal": "Duvar giydirmeli salon", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "29.06.2026", "teslim": "Eylül sonu", "satis": "", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü —\nS→T —\nÜ→T ~90g", "importedDates": ["", "29.06.2026", "Eylül sonu", ""]}, {"musteri": "Harun Başaran", "mahal": "4+1", "redName": true, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "05.08.2026", "uretim": "10.08.2026", "teslim": "15.10.2026", "satis": "17.07.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 24g\nS→T 90g\nÜ→T 66g\nGecikme 5g", "importedDates": ["17.07.2026", "10.08.2026", "15.10.2026", "05.08.2026"]}, {"musteri": "Alişen Çelen kolon", "mahal": "2 kolon", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "22.08.2026", "uretim": "22.08.2026", "teslim": "", "satis": "", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü —\nS→T —\nÜ→T —", "importedDates": ["", "22.08.2026", "", "22.08.2026"]}, {"musteri": "Merve Balki", "mahal": "Hareketli salon", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "29.08.2026", "teslim": "", "satis": "24.07.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 36g\nS→T —\nÜ→T —", "importedDates": ["24.07.2026", "29.08.2026", "", ""]}, {"musteri": "Bilal tellioğlu", "mahal": "", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "22.09.2026", "uretim": "24.09.2026", "teslim": "28.10.2026", "satis": "15.09.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 9g\nS→T 43g\nÜ→T 34g\nGecikme 2g", "importedDates": ["15.09.2026", "24.09.2026", "28.10.2026", "22.09.2026"]}], "collapsed": false}, {"temsilci": "Nükte Özkurt", "rows": [{"musteri": "Tuğba Aydın", "mahal": "Tv'li salon", "redName": false, "morName": true, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "10.07.2026", "uretim": "13.07.2026", "teslim": "Eylül 3.haftası", "satis": "17.06.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 26g\nS→T ~93g\nÜ→T ~67g\nGecikme 3g", "importedDates": ["17.06.2026", "13.07.2026", "Eylül 3.haftası", "10.07.2026"]}, {"musteri": "Dündar Topçu", "mahal": "2+1", "redName": false, "morName": true, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "13.07.2026", "uretim": "14.07.2026", "teslim": "30.10.2026", "satis": "19.04.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 86g\nS→T 194g\nÜ→T 108g\nGecikme 1g", "importedDates": ["19.04.2026", "14.07.2026", "30.10.2026", "13.07.2026"]}, {"musteri": "Batuhan Topçu", "mahal": "3+1", "redName": false, "morName": true, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "11.08.2026", "uretim": "11.08.2026", "teslim": "09.11.2026", "satis": "01.05.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 102g\nS→T 192g\nÜ→T 90g", "importedDates": ["01.05.2026", "11.08.2026", "09.11.2026", "11.08.2026"]}, {"musteri": "İsmet Böke", "mahal": "2 kanepe", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "10.09.2026", "teslim": "", "satis": "07.09.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 3g\nS→T —\nÜ→T —", "importedDates": ["07.09.2026", "10.09.2026", "", ""]}, {"musteri": "Mersiha Bayraktar", "mahal": "", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "23.09.2026", "teslim": "02.11.2026", "satis": "10.09.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 13g\nS→T 53g\nÜ→T 40g", "importedDates": ["10.09.2026", "23.09.2026", "02.11.2026", ""]}], "collapsed": false}, {"temsilci": "Özgür Çalım", "rows": [{"musteri": "Uğur Şentürk", "mahal": "2 berjer", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "08.09.2026", "teslim": "", "satis": "", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü —\nS→T —\nÜ→T —", "importedDates": ["", "08.09.2026", "", ""]}, {"musteri": "Arzu doğan", "mahal": "", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "19.09.2026", "uretim": "19.09.2026", "teslim": "Kasım 2.haftası", "satis": "13.09.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 6g\nS→T ~59g\nÜ→T ~53g", "importedDates": ["13.09.2026", "19.09.2026", "Kasım 2.haftası", "19.09.2026"]}], "collapsed": false}, {"temsilci": "Taner Bulak", "rows": [{"musteri": "Eda Çelik Ağırman", "mahal": "Hareketli salon", "redName": true, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "29.06.2026", "teslim": "10.09.2026", "satis": "", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü —\nS→T —\nÜ→T 73g", "importedDates": ["", "29.06.2026", "10.09.2026", ""]}, {"musteri": "Levent Bektaş", "mahal": "Tv'li ve duvar giydirmeli salon", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "25.06.2026", "teslim": "10-15 eylül", "satis": "", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü —\nS→T —\nÜ→T ~77g", "importedDates": ["", "25.06.2026", "10-15 eylül", ""]}, {"musteri": "Tarık Paksoy", "mahal": "Hareketli salon", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "", "teslim": "Ağustos 2.haftası", "satis": "", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü —\nS→T —\nÜ→T —", "importedDates": ["", "", "Ağustos 2.haftası", ""]}, {"musteri": "Cassoni iran", "mahal": "hareketli salon", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "15.07.2026", "uretim": "13.07.2026", "teslim": "", "satis": "", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü —\nS→T —\nÜ→T —", "importedDates": ["", "13.07.2026", "", "15.07.2026"]}, {"musteri": "Hasan Kerim Demir", "mahal": "Tv'li salon+yatak odası", "redName": true, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "08.07.2026", "uretim": "10.07.2026", "teslim": "15.08.2026", "satis": "15.06.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 25g\nS→T 61g\nÜ→T 36g\nGecikme 2g", "importedDates": ["15.06.2026", "10.07.2026", "15.08.2026", "08.07.2026"]}, {"musteri": "Veysel Keleş", "mahal": "hareketli salon", "redName": true, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "17.07.2026", "uretim": "16.07.2026", "teslim": "15.09.2026", "satis": "06.07.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 10g\nS→T 71g\nÜ→T 61g", "importedDates": ["06.07.2026", "16.07.2026", "15.09.2026", "17.07.2026"]}, {"musteri": "Birsen Tezel", "mahal": "2+1", "redName": true, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "13.08.2026", "uretim": "18.08.2026", "teslim": "07.10.2026", "satis": "13.06.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 66g\nS→T 116g\nÜ→T 50g\nGecikme 5g", "importedDates": ["13.06.2026", "18.08.2026", "07.10.2026", "13.08.2026"]}, {"musteri": "Yücel Arkın", "mahal": "2 kanepe", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "19.08.2026", "uretim": "18.08.2026", "teslim": "Ekim 1.haftası", "satis": "13.08.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 5g\nS→T ~52g\nÜ→T ~47g", "importedDates": ["13.08.2026", "18.08.2026", "Ekim 1.haftası", "19.08.2026"]}, {"musteri": "Arif Koru", "mahal": "2 kanepe 1 berjer", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "03.09.2026", "teslim": "17.10.2026", "satis": "19.10.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü -46g\nS→T -2g\nÜ→T 44g", "importedDates": ["19.10.2026", "03.09.2026", "17.10.2026", ""]}, {"musteri": "Feyzullah Ergül", "mahal": "Salon+oturma odası hareketli", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "07.09.2026", "teslim": "05.11.2026", "satis": "17.08.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 21g\nS→T 80g\nÜ→T 59g", "importedDates": ["17.08.2026", "07.09.2026", "05.11.2026", ""]}, {"musteri": "Ayla Çilelek", "mahal": "karyola ve dolap", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "23.09.2026", "teslim": "Kasım 3.haftası", "satis": "08.09.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 15g\nS→T ~71g\nÜ→T ~56g", "importedDates": ["08.09.2026", "23.09.2026", "Kasım 3.haftası", ""]}, {"musteri": "Mustafa Çelebi", "mahal": "2 kanepe", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "23.09.2026", "teslim": "19.11.2026", "satis": "19.09.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 4g\nS→T 61g\nÜ→T 57g", "importedDates": ["19.09.2026", "23.09.2026", "19.11.2026", ""]}, {"musteri": "Oğuzhan Çelebi", "mahal": "berjer+yan sehpa", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "23.09.2026", "teslim": "19.11.2026", "satis": "19.09.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 4g\nS→T 61g\nÜ→T 57g", "importedDates": ["19.09.2026", "23.09.2026", "19.11.2026", ""]}], "collapsed": false}, {"temsilci": "Zehra Doğan", "rows": [{"musteri": "Abdullah Şaşmaz", "mahal": "1 köşe kanepe", "redName": true, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "26.06.2026", "teslim": "Ağustos ortası", "satis": "", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü —\nS→T —\nÜ→T ~415g", "importedDates": ["", "26.06.2026", "Ağustos ortası", ""]}, {"musteri": "Halil İbrahim Sümerkan", "mahal": "2 kanepe", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "29.06.2026", "teslim": "Ağustos sonu", "satis": "", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü —\nS→T —\nÜ→T ~425g", "importedDates": ["", "29.06.2026", "Ağustos sonu", ""]}, {"musteri": "Raşit Doğrusoy", "mahal": "Hareketli salon", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "25.06.2026", "teslim": "Ağustos sonu", "satis": "", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü —\nS→T —\nÜ→T ~429g", "importedDates": ["", "25.06.2026", "Ağustos sonu", ""]}, {"musteri": "Musa Duman", "mahal": "Hareketli salon", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "03.07.2026", "uretim": "05.07.2026", "teslim": "4.09.2026", "satis": "25.06.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 10g\nS→T 71g\nÜ→T 61g\nGecikme 2g", "importedDates": ["25.06.2026", "05.07.2026", "4.09.2026", "03.07.2026"]}, {"musteri": "Gürkan Arpacı", "mahal": "Salon", "redName": true, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "03.07.2026", "uretim": "09.07.2026", "teslim": "13.08.2026", "satis": "15.06.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 24g\nS→T 59g\nÜ→T 35g\nGecikme 6g", "importedDates": ["15.06.2026", "09.07.2026", "13.08.2026", "03.07.2026"]}, {"musteri": "Burcu Özber", "mahal": "Salon+antre", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "03.07.2026", "uretim": "13.07.2026", "teslim": "Eylül 2.haftası", "satis": "26.07.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü -13g\nS→T ~47g\nÜ→T ~60g\nGecikme 10g", "importedDates": ["26.07.2026", "13.07.2026", "Eylül 2.haftası", "03.07.2026"]}, {"musteri": "Hazal Günel", "mahal": "Hareketli Salon", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "07.08.2026", "teslim": "01.10.2026", "satis": "04.08.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 3g\nS→T 58g\nÜ→T 55g", "importedDates": ["04.08.2026", "07.08.2026", "01.10.2026", ""]}, {"musteri": "Sultan Koçyiğit", "mahal": "Hareketli salon", "redName": true, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "25.08.2026", "uretim": "24.08.2026", "teslim": "30.10.2026", "satis": "17.08.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 7g\nS→T 74g\nÜ→T 67g", "importedDates": ["17.08.2026", "24.08.2026", "30.10.2026", "25.08.2026"]}, {"musteri": "Safer Lojistik", "mahal": "Hareketli salon", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "26.08.2026", "uretim": "24.08.2026", "teslim": "Ekim 4.haftası", "satis": "21.08.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 3g\nS→T ~65g\nÜ→T ~62g", "importedDates": ["21.08.2026", "24.08.2026", "Ekim 4.haftası", "26.08.2026"]}, {"musteri": "Hazal Güner", "mahal": "masa", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "08.09.2026", "teslim": "30.11.2026", "satis": "03.09.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 5g\nS→T 88g\nÜ→T 83g", "importedDates": ["03.09.2026", "08.09.2026", "30.11.2026", ""]}, {"musteri": "Birsel Eroğlu", "mahal": "Tv'li salon+antre+2 kapı", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "22.09.2026", "teslim": "23.11.2026", "satis": "23.08.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 30g\nS→T 92g\nÜ→T 62g", "importedDates": ["23.08.2026", "22.09.2026", "23.11.2026", ""]}], "collapsed": false}, {"temsilci": "Selçuk Bayrak", "rows": [{"musteri": "Doğan", "mahal": "Tv'li Mutfak", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "", "uretim": "25.06.2026", "teslim": "ACİL", "satis": "", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü —\nS→T —\nÜ→T —", "importedDates": ["", "25.06.2026", "ACİL", ""]}, {"musteri": "Öykü Karabağ", "mahal": "Mutfak-antre-genç oda-kapı", "redName": false, "morName": false, "redUretim": false, "green": true, "sure": null, "tahminiUretim": "11.08.2026", "uretim": "11.08.2026", "teslim": "", "satis": "09.07.2026", "not": "", "importedDeliveryNote": "", "importedSureler": "S→Ü 33g\nS→T —\nÜ→T —", "importedDates": ["09.07.2026", "11.08.2026", "", "11.08.2026"]}], "collapsed": false}], "showGecikmeNot": false};
+
+let data, tab = "aktif";
+try { data = JSON.parse(localStorage.getItem(LS_KEY)) || null; } catch(e){ data = null; }
+if(!data) data = JSON.parse(JSON.stringify(SEED));
+data.biten.forEach(g => g.rows.forEach(r => {
+  if(r.tahminiUretim === undefined) r.tahminiUretim = "";
+  r.green = true; r.redUretim = false;
+}));
+if(data.showGecikmeNot === undefined) data.showGecikmeNot = false;
+// Süre seçenekleri: {ad, min, max} — eski sayı formatından dönüştür
+if(!Array.isArray(data.sureSecenekleri) || !data.sureSecenekleri.length)
+  data.sureSecenekleri = [{ad:"Standart", min:30, max:35}];
+data.sureSecenekleri = data.sureSecenekleri.map(s =>
+  typeof s === "number" ? {ad: s + " gün", min:s, max:s} : s);
+["aktif","biten"].forEach(k => data[k].forEach(g => g.rows.forEach(r => {
+  if(r.sure === undefined) r.sure = null;
+  if(typeof r.sure === "number") r.sure = {ad: r.sure + " gün", min:r.sure, max:r.sure};
+})));
+function sellerKey(name){
+  return String(name || "").normalize("NFC").replace(/[\u200B-\u200D\uFEFF]/g, "").trim().replace(/\s+/g, " ").toLocaleLowerCase("tr-TR");
+}
+function sortSellerGroups(){
+  ["aktif", "biten"].forEach(key => data[key].sort((a,b) => {
+    const an = sellerKey(a.temsilci), bn = sellerKey(b.temsilci);
+    const lastA = an === "selçuk bayrak", lastB = bn === "selçuk bayrak";
+    if(lastA !== lastB) return lastA ? 1 : -1;
+    const alphabet = " abcçdefgğhıijklmnoöprsştuüvyz";
+    for(let i=0; i<Math.min(an.length,bn.length); i++){
+      if(an[i] === bn[i]) continue;
+      const ai = alphabet.indexOf(an[i]), bi = alphabet.indexOf(bn[i]);
+      if(ai >= 0 && bi >= 0) return ai-bi;
+      return an[i].localeCompare(bn[i], "tr", {sensitivity:"base"});
+    }
+    return an.length-bn.length;
+  }));
+  // Keep customer rows in insertion order within their own salesperson.
+}
+function save(){ sortSellerGroups(); localStorage.setItem(LS_KEY, JSON.stringify(data)); }
+
+function bugunTR(){
+  const t = new Date();
+  return String(t.getDate()).padStart(2,"0") + "." + String(t.getMonth()+1).padStart(2,"0") + "." + t.getFullYear();
+}
+function dateOf(str){
+  const d = parseTR(str);
+  if(d) return {d, approx:false};
+  const p = (typeof parseTRText === "function") ? parseTRText(str) : null;
+  return p ? {d:p.date, approx:true} : null;
+}
+function gunFarki(a, b){
+  const x = dateOf(a), y = dateOf(b);
+  if(!x || !y) return null;
+  const g = Math.round((y.d - x.d) / 86400000);
+  return {g, approx:x.approx || y.approx};
+}
+function gecmisMi(str){
+  const x = dateOf(str);
+  if(!x) return false;
+  const t = new Date(); t.setHours(0,0,0,0);
+  return x.d < t;
+}
+function neden(val, ad){
+  const v = String(val||"").trim();
+  if(!v) return ad + " boş";
+  return ad + ' tanınmadı: "' + v + '" (gg.aa.yyyy yazın)';
+}
+function fmtG(x, a, b, aAd, bAd){
+  if(x) return `<b>${x.approx?"~":""}${x.g}g</b>`;
+  const sebep = !dateOf(a) ? neden(a, aAd) : neden(b, bAd);
+  return `<b title="${esc(sebep)}" style="cursor:help">—</b>`;
+}
+function surelerHTML(r, isBiten){
+  if(r.importedSureler && JSON.stringify(r.importedDates) === JSON.stringify([r.satis,r.uretim,r.teslim,r.tahminiUretim])) return esc(r.importedSureler).replace(/\n/g,"<br>");
+  const su = gunFarki(r.satis, r.uretim);
+  const st = gunFarki(r.satis, r.teslim);
+  const ut = gunFarki(r.uretim, r.teslim);
+  const parts = [];
+  if(isBiten){
+    parts.push(`S→Ü ${fmtG(su, r.satis, r.uretim, "Satış tarihi", "Üretime atıldı")}`);
+    parts.push(`S→T ${fmtG(st, r.satis, r.teslim, "Satış tarihi", "Net teslim")}`);
+    parts.push(`Ü→T ${fmtG(ut, r.uretim, r.teslim, "Üretime atıldı", "Net teslim")}`);
+    const gec = gunFarki(r.tahminiUretim, r.uretim);
+    if(gec && gec.g > 0) parts.push(`<span style="color:var(--redname)">Gecikme <b style="color:var(--redname)">${gec.approx?"~":""}${gec.g}g</b></span>`);
+    return parts.join("<br>");
+  }
+  if(su) parts.push(`S→Ü ${fmtG(su, r.satis, r.uretim, "Satış tarihi", "Üretim tarihi")}`);
+  if(st) parts.push(`S→T ${fmtG(st, r.satis, r.teslim, "Satış tarihi", "Teslim tarihi")}`);
+  if(ut) parts.push(`Ü→T ${fmtG(ut, r.uretim, r.teslim, "Üretim tarihi", "Teslim tarihi")}`);
+  return parts.length ? parts.join("<br>") : "—";
+}
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+/* ---- Üretim süresi uyarısı ---- */
+function fmtTR(d){
+  return String(d.getDate()).padStart(2,"0") + "." + String(d.getMonth()+1).padStart(2,"0") + "." + d.getFullYear();
+}
+function sureUyari(r){
+  if(r.importedDeliveryNote && JSON.stringify(r.importedDates) === JSON.stringify([r.satis,r.uretim,r.teslim,r.tahminiUretim]) && !r.sure) return {cls:"bad",txt:r.importedDeliveryNote,excel:r.importedDeliveryNote};
+  const s = r.sure;
+  if(!s || !s.min) return null;
+  const aralik = s.min === s.max ? `${s.min}g` : `${s.min}–${s.max}g`;
+  const etiket = `⏱ ${s.ad} ${aralik}`;
+  const u = dateOf(r.uretim);
+  if(!u) return {cls:"mid", txt:`${etiket} · üretim tarihi yok`, excel:null};
+  const hMin = new Date(u.d); hMin.setDate(hMin.getDate() + s.min);
+  const hMax = new Date(u.d); hMax.setDate(hMax.getDate() + s.max);
+  const hedefStr = s.min === s.max ? fmtTR(hMax) : fmtTR(hMin) + " – " + fmtTR(hMax);
+  const t = dateOf(r.teslim);
+  const yak = (u.approx || (t && t.approx)) ? "~" : "";
+  if(!t) return {cls:"mid", txt:`${etiket} → ${yak}${hedefStr} · teslim tarihi yok`, excel:null};
+  const fMin = Math.round((t.d - hMin) / 86400000); // teslim - erken hedef
+  if(fMin >= 0) return {cls:"ok",  txt:`${etiket} → ${yak}${hedefStr} · ✓ uygun`, excel:"uygun"};
+  return {cls:"bad", txt:`${etiket} → ${yak}${hedefStr} · ⚠ ${-fMin}g yetişmiyor!`, excel:"problem var"};
+}
+
+
+function updateOverview(){
+ const active=data.aktif.flatMap(g=>g.rows);
+ document.getElementById('statActive').textContent=active.length;
+ document.getElementById('statDone').textContent=data.biten.reduce((n,g)=>n+g.rows.length,0);
+ document.getElementById('statReps').textContent=new Set([...data.aktif,...data.biten].map(g=>sellerKey(g.temsilci))).size;
+ document.getElementById('uiToolbar').hidden=view==='takvim';
+ document.getElementById('uiToolbar').style.display=view==='takvim'?'none':'flex';
+ const select=document.getElementById('uiRep'), previous=select.value;
+ select.innerHTML='<option value="">Tüm temsilciler</option>'+data[tab].map((g,i)=>`<option value="${esc(g.temsilci)}">${esc(g.temsilci)}</option>`).join('');
+ select.value=Array.from(select.options).some(o=>o.value===previous)?previous:'';
+ applyFilters();
+}
+function applyFilters(){
+ if(view==='takvim')return;
+ const query=document.getElementById('uiSearch').value.toLocaleLowerCase('tr-TR').trim();
+ const rep=document.getElementById('uiRep').value;
+ let total=0;
+ data[tab].forEach((g,gi)=>{
+  let visible=0;
+  document.querySelectorAll(`#app tr[data-group="${gi}"][data-row]`).forEach(tr=>{
+   const r=g.rows[Number(tr.dataset.row)];
+   const show=(rep===''||rep===g.temsilci)&&[r.musteri,r.mahal,r.not,g.temsilci].join(' ').toLocaleLowerCase('tr-TR').includes(query);
+   tr.hidden=!show || !!g.collapsed;if(show)visible++;
+  });
+  const heading=document.querySelector(`#app tr.group[data-group="${gi}"]`);
+  if(heading)heading.hidden=(rep!==''&&rep!==g.temsilci)||(query!==''&&visible===0);
+  total+=visible;
+ });
+ let empty=document.getElementById('uiEmpty');if(empty)empty.remove();
+ if(!total&&(query||rep!=='')){empty=document.createElement('div');empty.id='uiEmpty';empty.className='empty-state';empty.textContent='Bu aramaya uygun müşteri bulunamadı.';document.getElementById('app').appendChild(empty);}
+}
+
+function render(){
+  sortSellerGroups();
+  const app = document.getElementById("app");
+  app.className = tab;
+  const cols = tab === "biten" ? bitenCols() : COLS[tab];
+  const nCols = cols.length;
+  let h = '<table><colgroup><col class="c-mus"><col class="c-mah"><col class="c-tar"><col class="c-tes">';
+  if(tab === "biten"){
+    h += '<col class="c-tes">';
+    if(data.showGecikmeNot) h += '<col>';
+  } else {
+    h += '<col>';
+  }
+  h += '<col style="width:104px"><col style="width:118px">';
+  h += '<col style="width:34px"></colgroup><thead><tr>';
+  cols.forEach(c => h += `<th>${esc(c)}</th>`);
+  h += '<th></th></tr></thead><tbody>';
+
+  data[tab].forEach((g, gi) => {
+    h += `<tr class="group" data-group="${gi}"><td colspan="${nCols}">
+      <div class="group-heading" onclick="if(!event.target.closest('button, [contenteditable]')) toggleGroup(${gi})"><span class="seller-avatar" aria-hidden="true">${esc(g.temsilci.split(/\s+/).filter(Boolean).slice(0,2).map(n=>n[0]).join('').toLocaleUpperCase('tr-TR'))}</span><div class="seller-text"><span class="seller-label">Satış temsilcisi</span><button type="button" class="gname seller-toggle" aria-expanded="${!g.collapsed}" onclick="toggleGroup(${gi})" title="Müşterileri aç / kapat"><span class="fold-arrow" aria-hidden="true">${g.collapsed ? "▸" : "▾"}</span>${esc(g.temsilci)}</button></div>
+      <span class="work-count">${g.rows.length} ${tab === 'biten' ? 'biten iş' : 'aktif iş'}</span>
+      <span class="gbtns">
+        <button class="gbtn" title="Temsilci adını düzenle" aria-label="Temsilci adını düzenle" onclick="renameGroup(${gi})">✎</button>
+        <button class="gbtn" title="Satır ekle" onclick="addRow(${gi})">＋</button>
+        <button class="gbtn" title="Temsilciyi sil" onclick="delGroup(${gi})">🗑</button>
+      </span></div></td><td class="act"></td></tr>`;
+    g.rows.forEach((r, ri) => {
+      const cls = tab === "biten" ? "green" : (ri % 2 === 1 ? "zebra" : "");
+      h += `<tr class="${cls}" data-group="${gi}" data-row="${ri}"${g.collapsed ? " hidden" : ""}>`;
+      if(tab === "aktif")
+        h += `<td class="name ${r.redName?'redname':''} ${r.morName?'morname':''}" onclick="openSureMenu(event,${gi},${ri})" title="Süre seçenekleri için dokunun">${esc(r.musteri)}</td>`;
+      else
+        h += `<td class="name ${r.redName?'redname':''} ${r.morName?'morname':''}" contenteditable spellcheck="false" onblur="edit(${gi},${ri},'musteri',this)">${esc(r.musteri)}</td>`;
+      h += `<td contenteditable spellcheck="false" onblur="edit(${gi},${ri},'mahal',this)">${esc(r.mahal)}</td>`;
+      if(tab === "biten")
+        h += `<td class="datecell" onclick="openPicker(event,${gi},${ri},'tahminiUretim')">${esc(r.tahminiUretim||"")}</td>`;
+      h += `<td class="datecell ${(tab==="aktif" && gecmisMi(r.uretim))?'gecmis':''}" onclick="openPicker(event,${gi},${ri},'uretim')">${esc(r.uretim)}</td>`;
+      const su = tab === "aktif" ? sureUyari(r) : null;
+      h += `<td class="datecell" onclick="openPicker(event,${gi},${ri},'teslim')">${esc(r.teslim)}${su ? `<span class="sureinfo ${su.cls}">${esc(su.txt)}</span>` : ""}</td>`;
+      if(tab === "aktif" || data.showGecikmeNot)
+        h += `<td contenteditable spellcheck="false" onblur="edit(${gi},${ri},'not',this)">${esc(r.not)}</td>`;
+      h += `<td class="datecell" onclick="openPicker(event,${gi},${ri},'satis')">${esc(r.satis||"")}</td>`;
+      h += `<td class="calc">${surelerHTML(r, tab === "biten")}</td>`;
+      h += `<td class="act"><button class="rowbtn" aria-label="Müşteri işlemleri" title="Müşteri işlemleri" onclick="openMenu(event,${gi},${ri})">⋯</button></td></tr>`;
+    });
+  });
+  h += '</tbody></table>';
+  app.innerHTML = h;
+  app.querySelectorAll('tr[data-row]').forEach(row => {
+    Array.from(row.cells).forEach((cell, i) => { if(cols[i]) cell.dataset.label = cols[i]; });
+  });
+  document.getElementById("footnote").textContent = FOOT;
+  syncTabs();
+}
+
+function switchTab(t){ closeMenu(); closePicker();
+  if(t === "takvim"){ view = "takvim"; renderCal(); }
+  else { view = t; tab = t; render(); }
+  syncTabs();
+}
+let view = "aktif";
+let calY = new Date().getFullYear(), calM = new Date().getMonth();
+function toggleGecNot(){
+  data.showGecikmeNot = !data.showGecikmeNot;
+  save(); render();
+  toast(data.showGecikmeNot ? "Gecikme notu kolonu açıldı" : "Gecikme notu kolonu gizlendi");
+}
+function syncTabs(){
+  updateOverview();
+  document.getElementById("tabAktif").className  = "tab" + (view==="aktif"  ? " active" : "");
+  document.getElementById("tabBiten").className  = "tab" + (view==="biten"  ? " active" : "");
+  document.getElementById("tabTakvim").className = "tab" + (view==="takvim" ? " active" : "");
+  document.getElementById("btnAddGroup").style.display = view==="takvim" ? "none" : "";
+  const b = document.getElementById("btnGecNot");
+  b.style.display = view==="biten" ? "" : "none";
+  b.style.background = data.showGecikmeNot ? "var(--amber)" : "";
+  b.style.color = data.showGecikmeNot ? "#fff" : "";
+  b.style.borderStyle = data.showGecikmeNot ? "solid" : "dashed";
+}
+function edit(gi,ri,f,el){ data[tab][gi].rows[ri][f] = el.innerText.trim(); save(); }
+function toggleGroup(gi){
+  const g = data[tab][gi];
+  g.collapsed = !g.collapsed;
+  const app = document.getElementById("app"), top = app.scrollTop, left = app.scrollLeft;
+  save(); render();
+  app.scrollTop = top; app.scrollLeft = left;
+}
+function renameGroup(gi){
+  const name = prompt("Temsilci adı:", data[tab][gi].temsilci);
+  if(name && name.trim()) editGroup(gi, {innerText:name});
+}
+function editGroup(gi,el){ const v = el.innerText.trim(); if(v) data[tab][gi].temsilci = v; save(); render(); }
+function addRow(gi){ data[tab][gi].rows.push(R("Yeni Müşteri","","","","")); save(); render(); }
+function addGroup(){ const n = prompt("Temsilci adı:"); if(!n) return; data[tab].push({temsilci:n.trim(), rows:[]}); save(); render(); }
+function delGroup(gi){ const g = data[tab][gi];
+  if(!confirm(`"${g.temsilci}" ve altındaki ${g.rows.length} iş silinsin mi?`)) return;
+  data[tab].splice(gi,1); save(); render(); }
+function resetData(){ if(!confirm("Tüm değişiklikler silinip Excel'deki ilk hâline dönülsün mü?")) return;
+  data = JSON.parse(JSON.stringify(SEED)); save(); render(); toast("Veriler sıfırlandı"); }
+
+/* ---- row menu ---- */
+let menuEl = null;
+function openMenu(ev, gi, ri){
+  ev.stopPropagation(); closeMenu();
+  const r = data[tab][gi].rows[ri];
+  const other = tab === "aktif" ? "Bitenlere taşı ✅" : "Aktife geri taşı ↩";
+  menuEl = document.createElement("div");
+  menuEl.className = "menu";
+  const opts = tab === "aktif" ? `
+    <button class="${r.redName?'on':''}" onclick="tog(${gi},${ri},'redName')">🔴 Kırmızı isim (teslim bildirildi)</button>
+    <button class="${r.morName?'on':''}" onclick="tog(${gi},${ri},'morName')">🟣 Mor isim (tarih değiştirilebilir)</button>
+    <hr>` : `
+    <button class="${r.redName?'on':''}" onclick="tog(${gi},${ri},'redName')">🔴 Kırmızı isim (teslim bildirildi)</button>
+    <button class="${r.morName?'on':''}" onclick="tog(${gi},${ri},'morName')">🟣 Mor isim (tarih değiştirilebilir)</button>
+    <hr>`;
+  menuEl.innerHTML = opts + `
+    <button onclick="moveRow(${gi},${ri})">⇄ ${other}</button>
+    <button onclick="delRow(${gi},${ri})" style="color:#c00000">🗑 Satırı sil</button>`;
+  document.body.appendChild(menuEl);
+  const x = Math.min(ev.clientX, window.innerWidth - 250);
+  const y = Math.min(ev.clientY, window.innerHeight - 240);
+  menuEl.style.left = Math.max(8,x) + "px";
+  menuEl.style.top = Math.max(8,y) + "px";
+  setTimeout(()=>document.addEventListener("click", closeMenu, {once:true}),0);
+}
+function closeMenu(){ if(menuEl){ menuEl.remove(); menuEl = null; } }
+function tog(gi,ri,f){ const r = data[tab][gi].rows[ri]; r[f] = !r[f];
+  if(f === "redName" && r.redName) r.morName = false;
+  if(f === "morName" && r.morName) r.redName = false;
+  save(); render(); }
+function delRow(gi,ri){ const r = data[tab][gi].rows[ri];
+  if(!confirm(`"${r.musteri}" silinsin mi?`)) return;
+  data[tab][gi].rows.splice(ri,1); save(); render(); }
+function moveRow(gi,ri){
+  const from = tab, to = tab === "aktif" ? "biten" : "aktif";
+  const g = data[from][gi]; const r = g.rows.splice(ri,1)[0];
+  if(to === "biten"){
+    r.green = true;
+    r.redUretim = false;
+    r.tahminiUretim = r.uretim;   // Aktif'teki tahmini üretim saklanır
+    r.uretim = bugunTR();         // üretime atıldı = bugün (elle değiştirilebilir)
+    r.not = "";                   // eski notlar temizlenir, yenisi girilebilir
+  } else {
+    r.uretim = r.tahminiUretim || r.uretim;  // aktife dönüşte tahmin geri gelir
+    r.tahminiUretim = "";
+  }
+  let tg = data[to].find(x => sellerKey(x.temsilci) === sellerKey(g.temsilci));
+  if(!tg){ tg = {temsilci:g.temsilci, rows:[]}; data[to].push(tg); }
+  tg.rows.push(r); save(); render();
+  toast(`"${r.musteri}" → ${to === "biten" ? "Biten" : "Aktif"}`);
+}
+/* ---- Üretim süresi menüsü (müşteri adına tıklayınca) ---- */
+function openSureMenu(ev, gi, ri){
+  ev.stopPropagation(); closeMenu(); closePicker();
+  const r = data[tab][gi].rows[ri];
+  menuEl = document.createElement("div");
+  menuEl.className = "menu";
+  let h = `<div class="mtitle">⏱ Üretim süresi — ${esc(r.musteri)}</div>`;
+  data.sureSecenekleri.forEach((s, i) => {
+    const secili = r.sure && r.sure.ad === s.ad && r.sure.min === s.min && r.sure.max === s.max;
+    const aralik = s.min === s.max ? `${s.min} gün` : `${s.min}–${s.max} gün`;
+    h += `<div class="srow">
+      <button class="${secili ? 'on' : ''}" onclick="setSure(${gi},${ri},${i})">${esc(s.ad)} <span style="color:#999; font-weight:600">· ${aralik}</span></button>
+      <button class="sx" title="Bu seçeneği listeden sil" onclick="delSureSecenek(event,${i})">✕</button>
+    </div>`;
+  });
+  h += `<button class="${!r.sure ? 'on' : ''}" onclick="setSure(${gi},${ri},-1)">Süre yok</button>
+    <hr>
+    <button onclick="addSureSecenek(event)">＋ Yeni seçenek ekle (yazı + gün aralığı)</button>
+    <hr>
+    <button onclick="editName(${gi},${ri})">✏️ Müşteri adını düzenle</button>`;
+  menuEl.innerHTML = h;
+  document.body.appendChild(menuEl);
+  const rect = menuEl.getBoundingClientRect();
+  menuEl.style.left = Math.max(8, Math.min(ev.clientX, window.innerWidth - rect.width - 10)) + "px";
+  menuEl.style.top  = Math.max(8, Math.min(ev.clientY, window.innerHeight - rect.height - 10)) + "px";
+  setTimeout(() => document.addEventListener("click", closeMenu, {once:true}), 0);
+}
+function setSure(gi, ri, i){
+  const r = data[tab][gi].rows[ri];
+  if(i < 0){ r.sure = null; }
+  else {
+    const s = data.sureSecenekleri[i];
+    r.sure = {ad:s.ad, min:s.min, max:s.max};  // kopya: seçenek sonradan silinse de satır etkilenmez
+  }
+  save(); closeMenu(); render();
+  if(r.sure) toast(`${r.sure.ad}: ${r.sure.min}–${r.sure.max} gün`);
+}
+function parseAralik(v){
+  const m = String(v||"").trim().match(/^(\d{1,3})(?:\s*[-–]\s*(\d{1,3}))?$/);
+  if(!m) return null;
+  let min = +m[1], max = m[2] ? +m[2] : +m[1];
+  if(min > max){ const t = min; min = max; max = t; }
+  return min > 0 ? {min, max} : null;
+}
+function addSureSecenek(ev){
+  ev.stopPropagation();
+  const ad = prompt("Seçeneğin yazısı (örn. Hareketli salon):");
+  if(ad === null || !ad.trim()){ closeMenu(); return; }
+  const v = prompt("Gün aralığı (örn. 30-35 veya tek sayı 40):");
+  if(v === null){ closeMenu(); return; }
+  const a = parseAralik(v);
+  if(!a){ alert('Geçerli bir aralık girin. Örnek: "30-35" veya "40"'); closeMenu(); return; }
+  data.sureSecenekleri.push({ad: ad.trim(), min: a.min, max: a.max});
+  save(); closeMenu();
+  toast(`"${ad.trim()}" (${a.min}–${a.max} gün) eklendi`);
+}
+function delSureSecenek(ev, i){
+  ev.stopPropagation();
+  const s = data.sureSecenekleri[i];
+  if(!confirm(`"${s.ad}" (${s.min}–${s.max} gün) seçeneği listeden silinsin mi?\n(Satırlara atanmış süreler etkilenmez.)`)) return;
+  data.sureSecenekleri.splice(i, 1);
+  save(); closeMenu();
+  toast(`"${s.ad}" silindi`);
+}
+function editName(gi, ri){
+  const r = data[tab][gi].rows[ri];
+  const v = prompt("Müşteri adı:", r.musteri);
+  if(v !== null && v.trim()){ r.musteri = v.trim(); save(); render(); }
+  closeMenu();
+}
+
+function toast(m){ const t = document.getElementById("toast"); t.textContent = m; t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"), 2200); }
+
+/* ---- Ayarlar (dişli) menüsü ---- */
+function openGear(ev){
+  ev.stopPropagation(); closeMenu(); closePicker();
+  menuEl = document.createElement("div");
+  menuEl.className = "menu";
+  menuEl.innerHTML = `
+    <button onclick="downloadJSON()">💾 Verileri indir (yedek)</button>
+    <button onclick="document.getElementById('fileImport').click(); closeMenu();">📂 Verileri yükle</button>
+    <hr>
+    <button onclick="deleteAll()" style="color:#c00000">🗑 Tüm verileri sil</button>`;
+  document.body.appendChild(menuEl);
+  const btn = document.getElementById("btnGear").getBoundingClientRect();
+  const w = 240;
+  menuEl.style.minWidth = w + "px";
+  menuEl.style.left = Math.max(8, Math.min(btn.right - w, window.innerWidth - w - 10)) + "px";
+  menuEl.style.top = (btn.bottom + 6) + "px";
+  setTimeout(() => document.addEventListener("click", closeMenu, {once:true}), 0);
+}
+function downloadJSON(){
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "Müşteriler_Yedek_" + bugunTR() + ".json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast("Yedek indirildi ✓");
+}
+function importJSON(inp){
+  const f = inp.files && inp.files[0];
+  inp.value = "";
+  if(!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    try {
+      const d = JSON.parse(rd.result);
+      if(!Array.isArray(d.aktif) || !Array.isArray(d.biten)) throw new Error("format");
+      if(!confirm("Yedekteki veriler mevcut verilerin ÜZERİNE yazılacak. Devam edilsin mi?")) return;
+      data = d;
+      if(data.showGecikmeNot === undefined) data.showGecikmeNot = false;
+      data.biten.forEach(g => g.rows.forEach(r => {
+        if(r.tahminiUretim === undefined) r.tahminiUretim = "";
+        r.green = true; r.redUretim = false;
+      }));
+      save();
+      view === "takvim" ? renderCal() : render();
+      toast("Veriler yüklendi ✓");
+    } catch(e){
+      alert("Dosya okunamadı. Geçerli bir yedek (.json) dosyası seçtiğinizden emin olun.");
+    }
+  };
+  rd.readAsText(f, "utf-8");
+}
+function deleteAll(){
+  if(!confirm("TÜM veriler silinecek (Aktif + Biten). Bu işlem geri alınamaz!\n\nSilmeden önce yedek almanız önerilir. Devam edilsin mi?")) return;
+  if(!confirm("Emin misiniz? Son onay.")) return;
+  data = {aktif:[], biten:[], showGecikmeNot:false};
+  save();
+  view === "takvim" ? renderCal() : render();
+  toast("Tüm veriler silindi");
+}
+
+/* ---- Tarih seçici ---- */
+let pickEl = null, pick = null;
+function openPicker(ev, gi, ri, f){
+  ev.stopPropagation(); closeMenu(); closePicker();
+  const cur = data[tab][gi].rows[ri][f] || "";
+  const base = parseTR(cur) || (parseTRText(cur) || {}).date || new Date();
+  pick = {gi, ri, f, y: base.getFullYear(), m: base.getMonth(), cur};
+  pickEl = document.createElement("div");
+  pickEl.className = "menu dp";
+  document.body.appendChild(pickEl);
+  drawPicker();
+  const rect = pickEl.getBoundingClientRect();
+  pickEl.style.left = Math.max(8, Math.min(ev.clientX, window.innerWidth - rect.width - 10)) + "px";
+  pickEl.style.top  = Math.max(8, Math.min(ev.clientY, window.innerHeight - rect.height - 10)) + "px";
+  setTimeout(() => document.addEventListener("pointerdown", pickerOutside), 0);
+}
+function pickerOutside(e){ if(pickEl && !pickEl.contains(e.target)) closePicker(); }
+function closePicker(){
+  if(pickEl){ pickEl.remove(); pickEl = null; document.removeEventListener("pointerdown", pickerOutside); }
+}
+function pickNav(d){ pick.m += d; if(pick.m < 0){ pick.m = 11; pick.y--; } if(pick.m > 11){ pick.m = 0; pick.y++; } drawPicker(); }
+function drawPicker(){
+  const y = pick.y, m = pick.m;
+  const first = new Date(y, m, 1);
+  const start = (first.getDay() + 6) % 7;
+  const dim = new Date(y, m+1, 0).getDate();
+  const dimPrev = new Date(y, m, 0).getDate();
+  const now = new Date();
+  const cells = Math.ceil((start + dim) / 7) * 7;
+  let g = `<div class="dph"><button class="dpnav" onclick="pickNav(-1)">‹</button><b>${AYLAR[m]} ${y}</b><button class="dpnav" onclick="pickNav(1)">›</button></div>`;
+  g += `<div class="grid"><div class="hd">Hf</div>` + GUNLER.map(x => `<div class="hd">${x}</div>`).join("");
+  for(let w = 0; w < cells/7; w++){
+    // haftanın perşembesine göre ay ve hafta no
+    const ti = w*7 + 3;
+    let td = ti - start + 1, tm = m, ty = y;
+    if(ti < start){ td = dimPrev - start + 1 + ti; tm = m-1; if(tm<0){tm=11;ty--;} }
+    else if(td > dim){ td = td - dim; tm = m+1; if(tm>11){tm=0;ty++;} }
+    const wn = Math.ceil(td / 7);
+    const wtxt = AYLAR[tm] + " " + wn + ".haftası";
+    g += `<button class="wk" title="${wtxt}" onclick="setPicked('${wtxt}')">${wn}.hf</button>`;
+    for(let j = 0; j < 7; j++){
+      const i = w*7 + j;
+      let d = i - start + 1, dm = m, dy = y, out = false;
+      if(i < start){ d = dimPrev - start + 1 + i; dm = m-1; if(dm<0){dm=11;dy--;} out = true; }
+      else if(d > dim){ d = d - dim; dm = m+1; if(dm>11){dm=0;dy++;} out = true; }
+      const tdy = d===now.getDate() && dm===now.getMonth() && dy===now.getFullYear();
+      const val = String(d).padStart(2,"0") + "." + String(dm+1).padStart(2,"0") + "." + dy;
+      g += `<button class="${out?"out":""}${tdy?" tdy":""}" onclick="setPicked('${val}')">${d}</button>`;
+    }
+  }
+  g += `</div><div class="dpf">
+    <button onclick="ellePick()">✏️ Elle yaz</button>
+    <button onclick="setPicked('')">Temizle</button>
+  </div>`;
+  pickEl.innerHTML = g;
+}
+function setPicked(v){
+  data[tab][pick.gi].rows[pick.ri][pick.f] = v;
+  save(); closePicker(); render();
+}
+function ellePick(){
+  const v = prompt("Tarih veya metin girin:", pick.cur);
+  if(v !== null){ data[tab][pick.gi].rows[pick.ri][pick.f] = v.trim(); save(); render(); }
+  closePicker();
+}
+
+/* ---- Excel export (styled, birebir) ---- */
+function exportExcel(){
+  if(typeof XLSX === "undefined"){ alert("Excel kütüphanesi yüklenemedi. İnternet bağlantısını kontrol edin."); return; }
+  const wb = XLSX.utils.book_new();
+  const B = {style:"thin", color:{rgb:"D9D2C7"}};
+  const borders = {top:B,bottom:B,left:B,right:B};
+  const S = {
+    head:  {fill:{fgColor:{rgb:"262626"}}, font:{bold:true, color:{rgb:"FFFFFF"}}, border:borders, alignment:{vertical:"center"}},
+    group: {fill:{fgColor:{rgb:"B45309"}}, font:{bold:true, color:{rgb:"FFFFFF"}}, border:borders},
+    base:  {border:borders, alignment:{vertical:"top", wrapText:true}},
+    foot:  {font:{color:{rgb:"808080"}, italic:true}}
+  };
+  function cellStyle(r, colIsName, colIsUretim, zebra, isBiten){
+    const st = JSON.parse(JSON.stringify(S.base));
+    if(isBiten) st.fill = {fgColor:{rgb:"92D050"}};
+    else if(zebra) st.fill = {fgColor:{rgb:"FDF6EC"}};
+    if(colIsName && r.redName) st.font = {bold:true, color:{rgb:"C00000"}};
+    else if(colIsName && r.morName) st.font = {bold:true, color:{rgb:"7030A0"}};
+    if(!isBiten && colIsUretim && gecmisMi(r.uretim)){ st.fill = {fgColor:{rgb:"FFFFFF"}}; st.font = {bold:true, color:{rgb:"FF0000"}}; }
+    return st;
+  }
+  const sheets = [
+    {key:"aktif", name:"Aktif", cols:COLS.aktif.filter((_, i) => i !== 4), widths:[24,26,22.5,13,13,22], hasNot:true},
+    {key:"biten", name:"Biten", cols:null, widths:null, hasNot:true}
+  ];
+  sheets.forEach(sh => {
+    if(sh.key === "biten"){
+      sh.cols = bitenCols();
+      sh.widths = data.showGecikmeNot ? [24,26,14,14,16,40,13,24] : [24,26,14,14,16,13,24];
+    }
+    const n = sh.cols.length;
+    const aoa = [], merges = [], styles = [];
+    aoa.push(sh.cols); styles.push(sh.cols.map(()=>S.head));
+    let first = true;
+    data[sh.key].forEach(g => {
+      if(!first){ aoa.push(Array(n).fill("")); styles.push(Array(n).fill(null)); }
+      first = false;
+      const ri0 = aoa.length;
+      const row = Array(n).fill(""); row[0] = `${g.temsilci}  —  ${g.rows.length} iş`;
+      aoa.push(row); styles.push(Array(n).fill(S.group));
+      merges.push({s:{r:ri0,c:0}, e:{r:ri0,c:n-1}});
+      g.rows.forEach((r, i) => {
+        const sTxt = surelerHTML(r, sh.key === "biten").replace(/<br>/g, "\n").replace(/<[^>]+>/g, "").replace(/^—$/, "");
+        const su = sh.key === "aktif" ? sureUyari(r) : null;
+        const teslimTxt = r.teslim + (su && su.excel ? "\n" + su.excel : "");
+        const vals = sh.key === "biten"
+          ? [r.musteri, r.mahal, r.tahminiUretim||"", r.uretim, r.teslim].concat(data.showGecikmeNot ? [r.not] : [], [r.satis||"", sTxt])
+          : [r.musteri, r.mahal, r.uretim, teslimTxt, r.satis||"", sTxt];
+        aoa.push(vals);
+        const zebra = sh.key === "aktif" && (i % 2 === 1);
+        const rowStyles = vals.map((_, ci) => cellStyle(r, ci===0, ci===2, zebra, sh.key==="biten"));
+        if(su && su.excel && sh.key === "aktif")
+          rowStyles[3] = Object.assign(JSON.parse(JSON.stringify(rowStyles[3])),
+            {font:{bold:true, color:{rgb: su.excel === "uygun" ? "1E7E34" : "FF0000"}}});
+        styles.push(rowStyles);
+      });
+    });
+    aoa.push(Array(n).fill("")); styles.push(Array(n).fill(null));
+    const fr = Array(n).fill(""); fr[0] = FOOT;
+    aoa.push(fr); styles.push([S.foot].concat(Array(n-1).fill(null)));
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = sh.widths.map(w => ({wch:w}));
+    ws["!merges"] = merges;
+    ws["!rows"] = [{hpt:22}];
+    styles.forEach((rowSt, ri) => rowSt && rowSt.forEach((st, ci) => {
+      if(!st) return;
+      const addr = XLSX.utils.encode_cell({r:ri, c:ci});
+      if(!ws[addr]) ws[addr] = {t:"s", v:""};
+      ws[addr].s = st;
+    }));
+    XLSX.utils.book_append_sheet(wb, ws, sh.name);
+  });
+  const today = new Date();
+  const ad = today.getDate() + " " + AYLAR[today.getMonth()] + " " + today.getFullYear() + " Müşteriler";
+  XLSX.writeFile(wb, ad + ".xlsx");
+  toast("Excel indirildi ✓");
+}
+
+/* ---- Aylık takvim ---- */
+const AYLAR = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+const GUNLER = ["Pzt","Sal","Çar","Per","Cum","Cmt","Paz"];
+function parseTR(str){
+  const m = String(str||"").trim().match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})$/);
+  if(!m) return null;
+  const d = new Date(+m[3], +m[2]-1, +m[1]);
+  return (d.getMonth() === +m[2]-1) ? d : null;
+}
+const AY_ADLARI = {"ocak":0,"şubat":1,"subat":1,"mart":2,"nisan":3,"mayıs":4,"mayis":4,"haziran":5,
+  "temmuz":6,"ağustos":7,"agustos":7,"eylül":8,"eylul":8,"ekim":9,"kasım":10,"kasim":10,"aralık":11,"aralik":11};
+function inferYear(m){
+  const now = new Date();
+  return m < now.getMonth() ? now.getFullYear()+1 : now.getFullYear();
+}
+// "Eylül 3.haftası", "eylül başı/ortası/sonu", "ağustos 2. haftası", "10-15 eylül" -> temsilî gün
+function parseTRText(str){
+  const t = String(str||"").trim().toLowerCase().replace(/i̇/g,"i");
+  if(!t) return null;
+  let m;
+  // "10-15 eylül"
+  m = t.match(/^(\d{1,2})\s*[-–]\s*(\d{1,2})\s+([a-zçğıöşü]+)$/);
+  if(m && AY_ADLARI[m[3]] !== undefined){
+    const mo = AY_ADLARI[m[3]];
+    return {date:new Date(inferYear(mo), mo, +m[1]), label:str.trim()};
+  }
+  // "eylül 3.haftası" / "eylül 3. hafta"
+  m = t.match(/^([a-zçğıöşü]+)\s+(\d)\s*\.?\s*hafta(sı)?$/);
+  if(m && AY_ADLARI[m[1]] !== undefined){
+    const mo = AY_ADLARI[m[1]], wk = Math.min(5, Math.max(1, +m[2]));
+    return {date:new Date(inferYear(mo), mo, (wk-1)*7+4), label:str.trim()};
+  }
+  // "eylül başı / ortası / sonu"
+  m = t.match(/^([a-zçğıöşü]+)\s+(başı|basi|ortası|ortasi|sonu)$/);
+  if(m && AY_ADLARI[m[1]] !== undefined){
+    const mo = AY_ADLARI[m[1]], y = inferYear(mo);
+    const day = m[2].startsWith("baş") || m[2].startsWith("bas") ? 3
+              : m[2].startsWith("ort") ? 15
+              : new Date(y, mo+1, 0).getDate() - 3;
+    return {date:new Date(y, mo, day), label:str.trim()};
+  }
+  return null;
+}
+function mondayOf(d){
+  const x = new Date(d); x.setDate(x.getDate() - ((x.getDay()+6)%7)); return x;
+}
+function collectWeekEvents(){
+  const wev = {}; // "y-m-d" (pazartesi) -> [{musteri,temsilci,label,done}]
+  data.aktif.forEach(g => g.rows.forEach(r => {
+    if(parseTR(r.teslim)) return;            // kesin tarihler gün hücresinde zaten var
+    const p = parseTRText(r.teslim); if(!p) return;
+    const mo = mondayOf(p.date);
+    const key = mo.getFullYear()+"-"+mo.getMonth()+"-"+mo.getDate();
+    (wev[key] = wev[key] || []).push({musteri:r.musteri, temsilci:g.temsilci, label:p.label});
+  }));
+  return wev;
+}
+function collectEvents(){
+  const ev = {}; // "y-m-d" -> [{musteri,temsilci}]
+  data.aktif.forEach(g => g.rows.forEach(r => {
+    const d = parseTR(r.teslim); if(!d) return;
+    const key = d.getFullYear()+"-"+d.getMonth()+"-"+d.getDate();
+    (ev[key] = ev[key] || []).push({musteri:r.musteri, temsilci:g.temsilci});
+  }));
+  return ev;
+}
+function calNav(delta){
+  if(delta === 0){ const n = new Date(); calY = n.getFullYear(); calM = n.getMonth(); }
+  else { calM += delta; if(calM < 0){ calM = 11; calY--; } if(calM > 11){ calM = 0; calY++; } }
+  renderCal();
+}
+function renderCal(){
+  sortSellerGroups();
+  const app = document.getElementById("app");
+  app.className = "takvim";
+  const ev = collectEvents();
+  const first = new Date(calY, calM, 1);
+  const start = (first.getDay() + 6) % 7;             // Pazartesi başlangıç
+  const dim = new Date(calY, calM+1, 0).getDate();
+  const dimPrev = new Date(calY, calM, 0).getDate();
+  const now = new Date();
+  let h = `<div class="calbar">
+      <button class="navbtn" type="button" data-nav="-1">‹</button>
+      <h2>${AYLAR[calM]} ${calY}</h2>
+      <button class="navbtn" type="button" data-nav="1">›</button>
+      <button class="navbtn today" type="button" data-nav="0">Bugün</button>
+    </div><div class="cal">`;
+  GUNLER.forEach(g => h += `<div class="dow">${g}</div>`);
+  const cells = Math.ceil((start + dim) / 7) * 7;
+  const days = [];
+  for(let i = 0; i < cells; i++){
+    let d, y = calY, m = calM, out = false;
+    if(i < start){ d = dimPrev - start + 1 + i; m = calM-1; if(m<0){m=11;y--;} out = true; }
+    else if(i - start + 1 > dim){ d = i - start - dim + 1; m = calM+1; if(m>11){m=0;y++;} out = true; }
+    else d = i - start + 1;
+    days.push({y,m,d,out});
+  }
+  const wev = collectWeekEvents();
+  for(let w = 0; w < cells/7; w++){
+    const mon = days[w*7];
+    const wkKey = mon.y + "-" + mon.m + "-" + mon.d;
+    const wkItems = wev[wkKey] || [];
+    if(wkItems.length){
+      h += `<div class="wkband"><span class="wtag">Bu hafta</span>` +
+        wkItems.map(e => `<span class="chip w" title="${esc(e.temsilci)} — ${esc(e.label)}">${esc(e.musteri)} · ${esc(e.label)}</span>`).join("") +
+        `</div>`;
+    }
+    for(let j = 0; j < 7; j++){
+      const c = days[w*7+j];
+      const isToday = !c.out && c.d===now.getDate() && c.m===now.getMonth() && c.y===now.getFullYear();
+      const key = c.y+"-"+c.m+"-"+c.d;
+      let chips = "";
+      (ev[key]||[]).forEach(e => {
+        chips += `<span class="chip t" title="${esc(e.musteri)} — ${esc(e.temsilci)} (Teslim)">${esc(e.musteri)}</span>`;
+      });
+      h += `<div class="day${c.out?" out":""}${isToday?" today":""}${!chips && !isToday ? " mobile-empty" : ""}"><div class="dnum" data-weekday="${GUNLER[j]}">${c.d}</div>${chips}</div>`;
+    }
+  }
+  h += `</div><div class="callegend">
+    <span><span class="sw" style="background:var(--dark)"></span> Tahmini teslim tarihi</span>
+    <span><span class="sw" style="background:#fff; border:1.5px dashed var(--amber)"></span> Haftalık söz ("Eylül 3.haftası" gibi) — haftanın üstünde bant olarak</span>
+  </div>`;
+  app.innerHTML = h;
+  app.querySelectorAll("[data-nav]").forEach(b =>
+    b.addEventListener("click", () => calNav(parseInt(b.dataset.nav, 10)))
+  );
+  // sağa/sola kaydırarak ay değiştirme (fare sürüklemesi + parmak)
+  const cal = app.querySelector(".cal");
+  let sx = 0, sy = 0, tracking = false;
+  cal.addEventListener("pointerdown", e => { tracking = true; sx = e.clientX; sy = e.clientY; }, {passive:true});
+  cal.addEventListener("pointerup", e => {
+    if(!tracking) return; tracking = false;
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    if(Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 2) calNav(dx < 0 ? 1 : -1);
+  }, {passive:true});
+  cal.addEventListener("pointercancel", () => { tracking = false; }, {passive:true});
+  document.getElementById("footnote").textContent = "";
+}
+render();
+</script>
+</body>
+</html>
